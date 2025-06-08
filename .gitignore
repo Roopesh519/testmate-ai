@@ -8,3 +8,6 @@ qa-chatbot-backend/.env
 qa-chatbot-backend/addUser.js
 
 qa-chatbot-frontend/.env
+
+.env
+*/.env
