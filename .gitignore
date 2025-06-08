@@ -1,0 +1,5 @@
+qa-chatbot-backend/node_modules
+qa-chatbot-backend/package-lock.json
+
+qa-chatbot-frontend/package-lock.json
+qa-chatbot-frontend/node_modules
