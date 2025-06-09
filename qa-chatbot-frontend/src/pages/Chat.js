@@ -4,6 +4,8 @@ import axios from 'axios';
 export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const token = localStorage.getItem('token');
   const chatRef = useRef();
 
@@ -24,6 +26,17 @@ export default function Chat() {
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  useEffect(() => {
+    if (showSidebar || showMobileMenu) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showSidebar, showMobileMenu]);
 
   useEffect(() => {
     chatRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,37 +61,218 @@ export default function Chat() {
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-gradient-to-br from-indigo-500 to-purple-600">
-      <div className="bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-2xl shadow-2xl w-full max-w-3xl p-6">
-        <h2 className="text-3xl font-bold text-white mb-6 text-center">QA ChatBot</h2>
+    <div className="h-screen bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
+      
+      {/* Mobile Sidebar Overlay */}
+      {showSidebar && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
 
-        <div className="h-[400px] overflow-y-auto mb-4 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-800 space-y-3 shadow-sm">
-          {messages.map((msg, idx) => (
-            <div key={idx}>
-              <p><span className="font-semibold text-blue-600">You:</span> {msg.prompt}</p>
-              <p><span className="font-semibold text-green-600">Bot:</span> {msg.response}</p>
-            </div>
-          ))}
-          <div ref={chatRef} />
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:block w-80 bg-gray-900 bg-opacity-95 backdrop-blur-md border-r border-white border-opacity-20">
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-white border-opacity-20">
+            <h3 className="text-lg font-bold text-white">Chat History</h3>
+          </div>
+
+          {/* Chat History List */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            {messages.length === 0 ? (
+              <p className="text-gray-400 text-sm">No chat history yet</p>
+            ) : (
+              <ul className="space-y-3">
+                {messages.map((msg, idx) => (
+                  <li 
+                    key={idx} 
+                    className="p-3 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 transition-colors cursor-pointer"
+                  >
+                    <div className="text-sm text-blue-200 truncate">
+                      {msg.prompt}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1 truncate">
+                      {msg.response.substring(0, 50)}...
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
+      </aside>
 
+      {/* Mobile Sidebar */}
+      <aside className={`
+        fixed top-0 left-0 h-full w-80 bg-gray-900 bg-opacity-95 backdrop-blur-md border-r border-white border-opacity-20 z-50
+        transform transition-transform duration-300 ease-in-out md:hidden
+        ${showSidebar ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="flex flex-col h-full">
+          {/* Mobile Sidebar Header */}
+          <div className="flex justify-between items-center p-4 border-b border-white border-opacity-20">
+            <h3 className="text-lg font-bold text-white">Chat History</h3>
+            <button 
+              onClick={() => setShowSidebar(false)} 
+              className="text-white text-2xl hover:text-gray-300"
+            >
+              ×
+            </button>
+          </div>
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Ask your test-related question..."
-            className="flex-grow px-4 py-2 bg-white bg-opacity-30 text-white placeholder-white border border-white border-opacity-30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
+          {/* Mobile Chat History List */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            {messages.length === 0 ? (
+              <p className="text-gray-400 text-sm">No chat history yet</p>
+            ) : (
+              <ul className="space-y-3">
+                {messages.map((msg, idx) => (
+                  <li 
+                    key={idx} 
+                    className="p-3 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 transition-colors cursor-pointer"
+                  >
+                    <div className="text-sm text-blue-200 truncate">
+                      {msg.prompt}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1 truncate">
+                      {msg.response.substring(0, 50)}...
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex flex-col flex-1">
+        
+        {/* Navbar */}
+        <header className="flex justify-between items-center p-4 bg-white bg-opacity-10 backdrop-blur-md border-b border-white border-opacity-20 flex-shrink-0">
+          {/* Left: Sidebar Toggle (Mobile) */}
           <button
-            onClick={sendMessage}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            className="p-2 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors md:hidden"
+            onClick={() => setShowSidebar(true)}
           >
-            Send
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
-        </div>
+
+          {/* Center: Logo */}
+          <h1 className="text-xl font-bold flex-1 text-center md:flex-none md:text-left">
+            QA ChatBot
+          </h1>
+
+          {/* Right: Menu */}
+          <div className="relative">
+            {/* Mobile Menu Button */}
+            <button
+              className="p-2 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors md:hidden"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zM12 13a1 1 0 110-2 1 1 0 010 2zM12 20a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+
+            {/* Mobile Menu Dropdown */}
+            {showMobileMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-[70]"
+                  onClick={() => setShowMobileMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white bg-opacity-95 backdrop-blur-md rounded-lg shadow-xl py-2 z-[80] border border-white border-opacity-20">
+                  <a href="#" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors">Profile</a>
+                  <a href="#" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors">Settings</a>
+                  <a href="#" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors">Help</a>
+                  <hr className="my-1 border-gray-300" />
+                  <a href="#" className="block px-4 py-2 text-red-600 hover:bg-red-50 hover:bg-opacity-50 transition-colors">Logout</a>
+                </div>
+              </>
+            )}
+
+            {/* Desktop Menu */}
+            <div className="hidden md:flex items-center space-x-4">
+              <a href="#" className="text-white hover:text-gray-300 transition-colors">Profile</a>
+              <a href="#" className="text-white hover:text-gray-300 transition-colors">Settings</a>
+              <a href="#" className="text-white hover:text-gray-300 transition-colors">Help</a>
+              <a href="#" className="text-red-300 hover:text-red-200 transition-colors">Logout</a>
+            </div>
+          </div>
+        </header>
+
+        {/* Chat Interface */}
+        <main className="flex-1 p-4 min-h-0">
+          <div className="h-full flex flex-col bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl">
+            
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="text-6xl mb-4">🤖</div>
+                    <h2 className="text-2xl font-bold mb-2">Welcome to QA ChatBot</h2>
+                    <p className="text-white text-opacity-70">Ask me anything to get started!</p>
+                  </div>
+                </div>
+              ) : (
+                messages.map((msg, idx) => (
+                  <div key={idx} className="space-y-3">
+                    {/* User Message */}
+                    <div className="flex justify-end">
+                      <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl bg-blue-600 text-white rounded-lg px-4 py-2 shadow-md">
+                        <p className="text-sm">{msg.prompt}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Bot Response */}
+                    <div className="flex justify-start">
+                      <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl bg-white bg-opacity-20 text-white rounded-lg px-4 py-2 shadow-md">
+                        <p className="text-sm">{msg.response}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={chatRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-white border-opacity-20 flex-shrink-0 z-[0]">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask your test-related question..."
+                  className="flex-1 px-4 py-3 bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!input.trim()}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md flex-shrink-0"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );
