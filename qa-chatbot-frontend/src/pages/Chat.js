@@ -6,21 +6,14 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const token = localStorage.getItem('token');
   const chatRef = useRef();
 
+  // Mock token for demo
+  const token = 'demo-token';
+
   const fetchHistory = async () => {
-    try {
-      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/history`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMessages(res.data.history.map(item => ({
-        prompt: item.prompt,
-        response: item.response
-      })));
-    } catch (err) {
-      console.error(err);
-    }
+    // Mock function - in real app this would fetch from API
+    console.log('Fetching history...');
   };
 
   useEffect(() => {
@@ -44,22 +37,29 @@ export default function Chat() {
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const newMessage = { prompt: input, response: '...' };
+    const newMessage = { prompt: input, response: 'This is a demo response to your question: ' + input };
     setMessages(prev => [...prev, newMessage]);
     setInput('');
-
-    try {
-      const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, { message: input }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMessages(prev => [
-        ...prev.slice(0, -1),
-        { prompt: input, response: res.data.reply }
-      ]);
-    } catch (err) {
-      alert('Error sending message');
-    }
   };
+
+  // const sendMessage = async () => {
+  //   if (!input.trim()) return;
+  //   const newMessage = { prompt: input, response: '...' };
+  //   setMessages(prev => [...prev, newMessage]);
+  //   setInput('');
+
+  //   try {
+  //     const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, { message: input }, {
+  //       headers: { Authorization: `Bearer ${token}` }
+  //     });
+  //     setMessages(prev => [
+  //       ...prev.slice(0, -1),
+  //       { prompt: input, response: res.data.reply }
+  //     ]);
+  //   } catch (err) {
+  //     alert('Error sending message');
+  //   }
+  // };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -68,7 +68,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
+    <div className="h-screen bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex overflow-hidden">
       
       {/* Mobile Sidebar Overlay */}
       {showSidebar && (
@@ -155,10 +155,10 @@ export default function Chat() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 relative min-h-0">
         
         {/* Navbar */}
-        <header className="flex justify-between items-center p-4 bg-white bg-opacity-10 backdrop-blur-md border-b border-white border-opacity-20 flex-shrink-0">
+        <header className="flex justify-between items-center p-4 bg-white bg-opacity-10 backdrop-blur-md border-b border-white border-opacity-20 flex-shrink-0 relative z-30 h-16">
           {/* Left: Sidebar Toggle (Mobile) */}
           <button
             className="p-2 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors md:hidden"
@@ -175,7 +175,7 @@ export default function Chat() {
           </h1>
 
           {/* Right: Menu */}
-          <div className="relative">
+          <div className="relative z-50">
             {/* Mobile Menu Button */}
             <button
               className="p-2 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors md:hidden"
@@ -190,35 +190,87 @@ export default function Chat() {
             {showMobileMenu && (
               <>
                 <div 
-                  className="fixed inset-0 z-[70]"
+                  className="fixed inset-0 z-[60]"
                   onClick={() => setShowMobileMenu(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white bg-opacity-95 backdrop-blur-md rounded-lg shadow-xl py-2 z-[80] border border-white border-opacity-20">
-                  <a href="#" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors">Profile</a>
-                  <a href="#" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors">Settings</a>
-                  <a href="#" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors">Help</a>
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white bg-opacity-95 backdrop-blur-md rounded-lg shadow-xl py-2 z-[70] border border-white border-opacity-20">
+                  <button 
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      alert('Profile clicked');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors"
+                  >
+                    Profile
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      alert('Settings clicked');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors"
+                  >
+                    Settings
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      alert('Help clicked');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 hover:bg-opacity-50 transition-colors"
+                  >
+                    Help
+                  </button>
                   <hr className="my-1 border-gray-300" />
-                  <a href="#" className="block px-4 py-2 text-red-600 hover:bg-red-50 hover:bg-opacity-50 transition-colors">Logout</a>
+                  <button 
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      alert('Logout clicked');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:bg-opacity-50 transition-colors"
+                  >
+                    Logout
+                  </button>
                 </div>
               </>
             )}
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-4">
-              <a href="#" className="text-white hover:text-gray-300 transition-colors">Profile</a>
-              <a href="#" className="text-white hover:text-gray-300 transition-colors">Settings</a>
-              <a href="#" className="text-white hover:text-gray-300 transition-colors">Help</a>
-              <a href="#" className="text-red-300 hover:text-red-200 transition-colors">Logout</a>
+              <button 
+                onClick={() => alert('Profile clicked')}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                Profile
+              </button>
+              <button 
+                onClick={() => alert('Settings clicked')}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                Settings
+              </button>
+              <button 
+                onClick={() => alert('Help clicked')}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                Help
+              </button>
+              <button 
+                onClick={() => alert('Logout clicked')}
+                className="text-red-300 hover:text-red-200 transition-colors"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </header>
 
         {/* Chat Interface */}
-        <main className="flex-1 p-4 min-h-0">
-          <div className="h-full flex flex-col bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl">
+        <main className="flex-1 p-4 min-h-0 pb-0">
+          <div className="h-full flex flex-col bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl min-h-0">
             
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -250,7 +302,7 @@ export default function Chat() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-white border-opacity-20 flex-shrink-0 z-[0]">
+            <div className="p-4 border-t border-white border-opacity-20 flex-shrink-0 bg-white bg-opacity-5">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -258,7 +310,7 @@ export default function Chat() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask your test-related question..."
-                  className="flex-1 px-4 py-3 bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  className="flex-1 px-4 py-3 bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-base"
                 />
                 <button
                   onClick={sendMessage}
