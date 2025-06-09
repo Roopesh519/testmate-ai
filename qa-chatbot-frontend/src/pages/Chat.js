@@ -61,6 +61,48 @@ export default function Chat() {
   //   }
   // };
 
+  // Logout function implementation
+  const handleLogout = async () => {
+    try {
+      // 1. Clear any stored authentication tokens
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      sessionStorage.clear();
+      
+      // 2. Call logout API endpoint (if your backend has one)
+      // Uncomment when you have real authentication:
+      /*
+      if (token && token !== 'demo-token') {
+        await axios.post(`${process.env.REACT_APP_API_BASE_URL}/logout`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      */
+      
+      // 3. Clear application state
+      setMessages([]);
+      setInput('');
+      setShowSidebar(false);
+      setShowMobileMenu(false);
+      
+      // 4. Show confirmation (optional)
+      // alert('Successfully logged out!');
+      
+      // 5. Redirect to login page
+      // Replace with your actual login route
+      // If using React Router: navigate('/login');
+      // For now, we'll simulate redirect:
+      window.location.href = '/login';
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      alert('Logout failed, but clearing session anyway');
+      // Still clear session and redirect even if API call fails
+      window.location.href = '/login';
+    }
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       sendMessage();
@@ -256,10 +298,13 @@ export default function Chat() {
                 Help
               </button>
               <button 
-                onClick={() => alert('Logout clicked')}
-                className="text-red-300 hover:text-red-200 transition-colors"
-              >
-                Logout
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      handleLogout();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:bg-opacity-50 transition-colors"
+                  >
+                    Logout
               </button>
             </div>
           </div>
