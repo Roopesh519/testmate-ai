@@ -35,31 +35,31 @@ export default function Chat() {
     chatRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // const sendMessage = async () => {
+    // if (!input.trim()) return;
+   // const newMessage = { prompt: input, response: 'This is a demo response to your question: ' + input };
+   // setMessages(prev => [...prev, newMessage]);
+  //  setInput('');
+ // };
+
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const newMessage = { prompt: input, response: 'This is a demo response to your question: ' + input };
+    const newMessage = { prompt: input, response: '...' };
     setMessages(prev => [...prev, newMessage]);
-    setInput('');
+   setInput('');
+
+     try {
+      const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, { message: input }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessages(prev => [
+        ...prev.slice(0, -1),
+       { prompt: input, response: res.data.reply }
+      ]);
+    } catch (err) {
+      alert('Error sending message');
+    }
   };
-
-  // const sendMessage = async () => {
-  //   if (!input.trim()) return;
-  //   const newMessage = { prompt: input, response: '...' };
-  //   setMessages(prev => [...prev, newMessage]);
-  //   setInput('');
-
-  //   try {
-  //     const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, { message: input }, {
-  //       headers: { Authorization: `Bearer ${token}` }
-  //     });
-  //     setMessages(prev => [
-  //       ...prev.slice(0, -1),
-  //       { prompt: input, response: res.data.reply }
-  //     ]);
-  //   } catch (err) {
-  //     alert('Error sending message');
-  //   }
-  // };
 
   // Logout function implementation
   const handleLogout = async () => {
