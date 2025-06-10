@@ -43,16 +43,21 @@ export default function Login() {
         
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center gap-4 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-xl p-4 shadow-lg transition hover:-translate-y-1 hover:shadow-2xl">
-            <div className="relative w-14 h-14">
-              <div className="w-full h-full bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center relative overflow-hidden">
+          <div className="flex items-center gap-4 bg-white bg-opacity-90 border border-white border-opacity-20 rounded-xl p-4 shadow-lg transition hover:-translate-y-1 hover:shadow-2xl">
+            {/* <div className="relative w-14 h-14"> */}
+              {/* <div className="w-full h-full bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center relative overflow-hidden">
                 <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent rotate-45"></div>
                 <div className="text-white text-2xl font-bold z-10">T</div>
-              </div>
-            </div>
-            <div className="text-white text-3xl font-bold tracking-tight">
+              </div> */}
+            {/* </div> */}
+            {/* <div className="text-white text-3xl font-bold tracking-tight">
               Test<span className="bg-gradient-to-br from-red-400 to-orange-500 bg-clip-text text-transparent">Mate</span><span className="bg-gradient-to-br from-cyan-400 to-blue-500 bg-clip-text text-transparent ml-1">AI</span>
-            </div>
+            </div> */}
+            <img
+              src="ai.png"
+              alt="Logo"
+              className="w-14 h-14 rounded-lg object-cover"
+            />
           </div>
         </div>
 
