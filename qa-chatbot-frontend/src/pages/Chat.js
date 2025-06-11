@@ -9,12 +9,26 @@ export default function Chat() {
   const chatRef = useRef();
 
   // Mock token for demo
-  const token = 'demo-token';
+  const token = localStorage.getItem('token');
 
   const fetchHistory = async () => {
-    // Mock function - in real app this would fetch from API
-    console.log('Fetching history...');
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/history`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessages(res.data.messages); // update based on real response structure
+    } catch (err) {
+      console.error('Failed to fetch chat history:', err);
+    }
   };
+
+
+  useEffect(() => {
+    if (!token) {
+      alert('You must be logged in to use the chat.');
+      window.location.href = '/login';
+    }
+  }, []);
 
   useEffect(() => {
     fetchHistory();
@@ -36,25 +50,25 @@ export default function Chat() {
   }, [messages]);
 
   // const sendMessage = async () => {
-    // if (!input.trim()) return;
-   // const newMessage = { prompt: input, response: 'This is a demo response to your question: ' + input };
-   // setMessages(prev => [...prev, newMessage]);
+  // if (!input.trim()) return;
+  // const newMessage = { prompt: input, response: 'This is a demo response to your question: ' + input };
+  // setMessages(prev => [...prev, newMessage]);
   //  setInput('');
- // };
+  // };
 
   const sendMessage = async () => {
     if (!input.trim()) return;
     const newMessage = { prompt: input, response: '...' };
     setMessages(prev => [...prev, newMessage]);
-   setInput('');
+    setInput('');
 
-     try {
+    try {
       const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, { message: input }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(prev => [
         ...prev.slice(0, -1),
-       { prompt: input, response: res.data.reply }
+        { prompt: input, response: res.data.reply }
       ]);
     } catch (err) {
       alert('Error sending message');
@@ -69,7 +83,7 @@ export default function Chat() {
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       sessionStorage.clear();
-      
+
       // 2. Call logout API endpoint (if your backend has one)
       // Uncomment when you have real authentication:
       /*
@@ -79,22 +93,22 @@ export default function Chat() {
         });
       }
       */
-      
+
       // 3. Clear application state
       setMessages([]);
       setInput('');
       setShowSidebar(false);
       setShowMobileMenu(false);
-      
+
       // 4. Show confirmation (optional)
       // alert('Successfully logged out!');
-      
+
       // 5. Redirect to login page
       // Replace with your actual login route
       // If using React Router: navigate('/login');
       // For now, we'll simulate redirect:
       window.location.href = '/login';
-      
+
     } catch (error) {
       console.error('Logout error:', error);
       alert('Logout failed, but clearing session anyway');
@@ -109,12 +123,24 @@ export default function Chat() {
     }
   };
 
+  // This sets the CSS variable --vh to the real 1% of the current viewport height
+  const setViewportHeight = () => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  };
+
+  // Set it on load
+  setViewportHeight();
+
+  // Update on resize
+  window.addEventListener('resize', setViewportHeight);
+
   return (
-    <div className="h-screen bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex overflow-hidden">
-      
+    <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
+
       {/* Mobile Sidebar Overlay */}
       {showSidebar && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={() => setShowSidebar(false)}
         />
@@ -135,8 +161,8 @@ export default function Chat() {
             ) : (
               <ul className="space-y-3">
                 {messages.map((msg, idx) => (
-                  <li 
-                    key={idx} 
+                  <li
+                    key={idx}
                     className="p-3 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 transition-colors cursor-pointer"
                   >
                     <div className="text-sm text-blue-200 truncate">
@@ -163,8 +189,8 @@ export default function Chat() {
           {/* Mobile Sidebar Header */}
           <div className="flex justify-between items-center p-4 border-b border-white border-opacity-20">
             <h3 className="text-lg font-bold text-white">Chat History</h3>
-            <button 
-              onClick={() => setShowSidebar(false)} 
+            <button
+              onClick={() => setShowSidebar(false)}
               className="text-white text-2xl hover:text-gray-300"
             >
               ×
@@ -178,8 +204,8 @@ export default function Chat() {
             ) : (
               <ul className="space-y-3">
                 {messages.map((msg, idx) => (
-                  <li 
-                    key={idx} 
+                  <li
+                    key={idx}
                     className="p-3 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 transition-colors cursor-pointer"
                   >
                     <div className="text-sm text-blue-200 truncate">
@@ -198,7 +224,7 @@ export default function Chat() {
 
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 relative min-h-0">
-        
+
         {/* Navbar */}
         <header className="flex justify-between items-center p-4 bg-white bg-opacity-10 backdrop-blur-md border-b border-white border-opacity-20 flex-shrink-0 relative z-30 h-16">
           {/* Left: Sidebar Toggle (Mobile) */}
@@ -212,9 +238,17 @@ export default function Chat() {
           </button>
 
           {/* Center: Logo */}
-          <h1 className="text-xl font-bold flex-1 text-center md:flex-none md:text-left">
-            QA ChatBot
-          </h1>
+          <div className="flex flex-col items-center mt-8 mb-8">
+            <div className="flex items-center gap-4 bg-white bg-opacity-90 border border-white border-opacity-20 rounded-xl p-2 shadow-lg transition-transform hover:-translate-y-1 hover:shadow-2xl">
+              <img
+                src="ai.png"
+                alt="Logo"
+                className="w-8 h-8 rounded-lg object-cover"
+              />
+              <h1 className="text-xl font-bold text-gray-900">TestMate AI</h1>
+            </div>
+          </div>
+
 
           {/* Right: Menu */}
           <div className="relative z-50">
@@ -231,12 +265,12 @@ export default function Chat() {
             {/* Mobile Menu Dropdown */}
             {showMobileMenu && (
               <>
-                <div 
+                <div
                   className="fixed inset-0 z-[60]"
                   onClick={() => setShowMobileMenu(false)}
                 />
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white bg-opacity-95 backdrop-blur-md rounded-lg shadow-xl py-2 z-[70] border border-white border-opacity-20">
-                  <button 
+                  <button
                     onClick={() => {
                       setShowMobileMenu(false);
                       alert('Profile clicked');
@@ -245,7 +279,7 @@ export default function Chat() {
                   >
                     Profile
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       setShowMobileMenu(false);
                       alert('Settings clicked');
@@ -254,7 +288,7 @@ export default function Chat() {
                   >
                     Settings
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       setShowMobileMenu(false);
                       alert('Help clicked');
@@ -264,47 +298,47 @@ export default function Chat() {
                     Help
                   </button>
                   <hr className="my-1 border-gray-300" />
-                  <button 
+                  <button
                     onClick={() => {
                       setShowMobileMenu(false);
                       handleLogout();
                     }}
-                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:bg-opacity-50 transition-colors"
+                    className="block w-full text-left px-4 py-2 text-black hover:bg-red-50 hover:bg-opacity-50 transition-colors"
                   >
                     Logout
-              </button>
+                  </button>
                 </div>
               </>
             )}
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-4">
-              <button 
+              <button
                 onClick={() => alert('Profile clicked')}
                 className="text-white hover:text-gray-300 transition-colors"
               >
                 Profile
               </button>
-              <button 
+              <button
                 onClick={() => alert('Settings clicked')}
                 className="text-white hover:text-gray-300 transition-colors"
               >
                 Settings
               </button>
-              <button 
+              <button
                 onClick={() => alert('Help clicked')}
                 className="text-white hover:text-gray-300 transition-colors"
               >
                 Help
               </button>
-              <button 
-                    onClick={() => {
-                      setShowMobileMenu(false);
-                      handleLogout();
-                    }}
-                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:bg-opacity-50 transition-colors"
-                  >
-                    Logout
+              <button
+                onClick={() => {
+                  setShowMobileMenu(false);
+                  handleLogout();
+                }}
+                className="block w-full text-left px-4 py-2 text-white hover:bg-red-50 hover:bg-opacity-50 transition-colors"
+              >
+                Logout
               </button>
             </div>
           </div>
@@ -312,16 +346,15 @@ export default function Chat() {
 
         {/* Chat Interface */}
         <main className="flex-1 p-4 min-h-0 pb-0">
-          <div className="h-full flex flex-col bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl min-h-0">
-            
+          <div className="flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl min-h-0 h-[calc(100%-0.80rem)]">
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <div className="text-6xl mb-4">🤖</div>
-                    <h2 className="text-2xl font-bold mb-2">Welcome to QA ChatBot</h2>
-                    <p className="text-white text-opacity-70">Ask me anything to get started!</p>
+                    {/* <div className="text-6xl mb-4">🤖</div> */}
+                    <h2 className="text-2xl text-black font-bold mb-2">Welcome to QA ChatBot</h2>
+                    <p className="text-black text-opacity-70">Ask me anything to get started!</p>
                   </div>
                 </div>
               ) : (
@@ -333,10 +366,10 @@ export default function Chat() {
                         <p className="text-sm">{msg.prompt}</p>
                       </div>
                     </div>
-                    
+
                     {/* Bot Response */}
                     <div className="flex justify-start">
-                      <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl bg-white bg-opacity-20 text-white rounded-lg px-4 py-2 shadow-md">
+                      <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl bg-black bg-opacity-30 text-white rounded-lg px-4 py-2 shadow-md">
                         <p className="text-sm">{msg.response}</p>
                       </div>
                     </div>
@@ -347,7 +380,7 @@ export default function Chat() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-white border-opacity-20 flex-shrink-0 bg-white bg-opacity-5">
+            <div className="p-4 border-t border-black border-opacity-20 flex-shrink-0 bg-white bg-opacity-5">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -355,7 +388,7 @@ export default function Chat() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask your test-related question..."
-                  className="flex-1 px-4 py-3 bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-base"
+                  className="flex-1 px-4 py-3 bg-white bg-opacity-20 text-black placeholder-black placeholder-opacity-50 border border-black border-opacity-30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-base"
                 />
                 <button
                   onClick={sendMessage}
