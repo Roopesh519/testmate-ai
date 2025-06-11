@@ -9,12 +9,26 @@ export default function Chat() {
   const chatRef = useRef();
 
   // Mock token for demo
-  const token = 'demo-token';
+  const token = localStorage.getItem('token');
 
   const fetchHistory = async () => {
-    // Mock function - in real app this would fetch from API
-    console.log('Fetching history...');
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/history`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessages(res.data.messages); // update based on real response structure
+    } catch (err) {
+      console.error('Failed to fetch chat history:', err);
+    }
   };
+
+
+  useEffect(() => {
+    if (!token) {
+      alert('You must be logged in to use the chat.');
+      window.location.href = '/login';
+    }
+  }, []);
 
   useEffect(() => {
     fetchHistory();
@@ -289,15 +303,15 @@ export default function Chat() {
                       setShowMobileMenu(false);
                       handleLogout();
                     }}
-                    className="block w-full text-left px-4 py-2 text-white hover:bg-red-50 hover:bg-opacity-50 transition-colors"
-                    >
+                    className="block w-full text-left px-4 py-2 text-black hover:bg-red-50 hover:bg-opacity-50 transition-colors"
+                  >
                     Logout
-                    </button>
-                  </div>
-                  </>
-                )}
+                  </button>
+                </div>
+              </>
+            )}
 
-                {/* Desktop Menu */}
+            {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-4">
               <button
                 onClick={() => alert('Profile clicked')}
@@ -322,7 +336,7 @@ export default function Chat() {
                   setShowMobileMenu(false);
                   handleLogout();
                 }}
-                className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:bg-opacity-50 transition-colors"
+                className="block w-full text-left px-4 py-2 text-white hover:bg-red-50 hover:bg-opacity-50 transition-colors"
               >
                 Logout
               </button>

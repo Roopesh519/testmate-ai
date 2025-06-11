@@ -1,51 +1,57 @@
 import express from 'express';
-import axios from 'axios';
 import ChatHistory from '../models/ChatHistory.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import Together from 'together-ai';
 
 const router = express.Router();
 
+let together = null;
+function getTogetherClient() {
+  if (!together) {
+    if (!process.env.TOGETHER_API_KEY) {
+      console.warn('⚠️ TOGETHER_API_KEY is missing from env!');
+    }
+    together = new Together(); // Will pull from process.env.TOGETHER_API_KEY
+    console.log('🧠 Together client initialized');
+  }
+  return together;
+}
+
 router.post('/', authMiddleware, async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user?.id;
   const { message } = req.body;
 
-  const payload = {
-    model: "deepseek-chat",
-    messages: [
-      { role: "system", content: "You are a QA assistant. Help testers with automation, BDD, and TDD." },
-      { role: "user", content: message }
-    ]
-  };
+  console.log('📥 Received POST /api/chat');
+  console.log('👤 User ID:', userId);
+  console.log('💬 Message:', message);
+
+  if (!message || typeof message !== 'string') {
+    console.warn('⚠️ Invalid message received');
+    return res.status(400).json({ error: 'Message is required and must be a string' });
+  }
 
   try {
-    const response = await axios.post(
-      'https://api.deepseek.com/v1/chat/completions',
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const client = getTogetherClient();
+    console.log('📡 Sending to Together.ai...');
+    const response = await client.chat.completions.create({
+      messages: [
+        { role: "system", content: "You are a QA assistant. Help testers with automation, BDD, and TDD." },
+        { role: "user", content: message }
+      ],
+      model: "deepseek-ai/DeepSeek-V3"
+    });
 
-    const reply = response.data.choices[0].message.content;
+    console.log('✅ Together.ai responded');
+    const reply = response.choices?.[0]?.message?.content || '[No reply from model]';
+    console.log('🧠 Model Reply:', reply);
+
     await ChatHistory.create({ userId, prompt: message, response: reply });
+    console.log('💾 Chat saved to DB');
 
     res.json({ reply });
   } catch (err) {
-    console.error(err.response?.data || err);
-    res.status(500).json({ error: 'Failed to fetch from DeepSeek' });
-  }
-});
-
-router.get('/history', authMiddleware, async (req, res) => {
-  try {
-    const history = await ChatHistory.find({ userId: req.user.id }).sort({ timestamp: -1 });
-    res.json({ history });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to retrieve chat history' });
+    console.error('❌ Error in chat route:', err.response?.data || err.message || err);
+    res.status(500).json({ error: 'Failed to fetch from Together.ai' });
   }
 });
 

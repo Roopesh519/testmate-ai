@@ -4,10 +4,14 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
+dotenv.config(); // ✅ Load env before importing routes
+
+console.log('🔐 JWT_SECRET loaded:', !!process.env.JWT_SECRET);
+console.log('🔑 TOGETHER_API_KEY loaded:', !!process.env.TOGETHER_API_KEY);
+console.log('🛢️ MONGO_URI loaded:', !!process.env.MONGO_URI);
+
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
