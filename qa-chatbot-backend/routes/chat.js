@@ -55,4 +55,24 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+// Fetch chat history
+router.get('/history', authMiddleware, async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: no user ID found' });
+  }
+
+  try {
+    const history = await ChatHistory.find({ userId })
+      .sort({ createdAt: -1 }) // Most recent first
+      .limit(20); // Limit number of responses (optional)
+    
+    res.json({ history });
+  } catch (err) {
+    console.error('❌ Error fetching chat history:', err.message || err);
+    res.status(500).json({ error: 'Failed to fetch chat history' });
+  }
+});
+
 export default router;

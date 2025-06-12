@@ -20,7 +20,8 @@ export default function Chat() {
       const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/history`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(res.data.messages);
+      // setMessages(res.data.messages);
+      setMessages(res.data.history || []);
     } catch (err) {
       console.error('Failed to fetch chat history:', err);
     }
