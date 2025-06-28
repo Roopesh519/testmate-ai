@@ -1,16 +1,37 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
-export default function ChatInput({ input, setInput, sendMessage, handleKeyPress }) {
+export default function ChatInput({ input, setInput, sendMessage }) {
+  const textareaRef = useRef(null);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  // Auto resize but restrict to max height
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.overflowY = 'hidden';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px'; // 160px = fixed max
+      el.style.overflowY = el.scrollHeight > 160 ? 'auto' : 'hidden';
+    }
+  }, [input]);
+
   return (
     <div className="p-4 border-t border-black border-opacity-20 flex-shrink-0 bg-white bg-opacity-5">
-      <div className="flex gap-2">
-        <input
-          type="text"
+      <div className="flex gap-2 items-end">
+        <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Ask your test-related question..."
-          className="flex-1 px-4 py-3 bg-white bg-opacity-20 text-black placeholder-black placeholder-opacity-50 border border-black border-opacity-30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-base"
+          onKeyDown={handleKeyDown}
+          rows={1}
+          placeholder="Ask your test-related question"
+          className="flex-1 px-4 py-3 bg-white bg-opacity-20 text-black placeholder-black placeholder-opacity-50 border border-black border-opacity-30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-base resize-none max-h-[160px] overflow-y-auto"
         />
         <button
           onClick={sendMessage}
