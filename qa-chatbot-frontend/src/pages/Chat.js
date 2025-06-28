@@ -6,33 +6,81 @@ import ChatInput from '../components/Chat/ChatInput';
 import Sidebar from '../components/Chat/Sidebar';
 import MobileSidebar from '../components/Chat/MobileSidebar';
 
-
 export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(null);
+
   const chatRef = useRef();
   const token = localStorage.getItem('token');
 
-  const fetchHistory = async () => {
+  // Fetch list of all conversations
+  const fetchConversations = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/history`, {
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // setMessages(res.data.messages);
-      setMessages(res.data.history || []);
+      setConversations(res.data.conversations);
     } catch (err) {
-      console.error('Failed to fetch chat history:', err);
+      console.error('Failed to fetch conversations:', err);
     }
   };
 
+  // Load messages of a specific conversation
+  const loadConversation = async (conversationId) => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessages(res.data.messages);
+      setActiveConversationId(conversationId);
+    } catch (err) {
+      console.error('Failed to load conversation:', err);
+    }
+  };
+
+  // Send message
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+
+    const newMessage = { prompt: input, response: '...' };
+    setMessages(prev => [...prev, newMessage]);
+    setInput('');
+
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, {
+        message: input,
+        conversationId: activeConversationId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const reply = res.data.reply;
+
+      // If a new conversation was created, store its ID
+      if (!activeConversationId && res.data.conversationId) {
+        setActiveConversationId(res.data.conversationId);
+        fetchConversations(); // Refresh sidebar
+      }
+
+      setMessages(prev => [...prev.slice(0, -1), { prompt: input, response: reply }]);
+    } catch (err) {
+      alert('Error sending message');
+      console.error(err);
+    }
+  };
+
+  // Initial effect to check auth and fetch conversations
   useEffect(() => {
     if (!token) {
       alert('You must be logged in to use the chat.');
       window.location.href = '/login';
     }
-    fetchHistory();
+
+    fetchConversations();
 
     const setViewportHeight = () => {
       const vh = window.innerHeight * 0.01;
@@ -44,32 +92,22 @@ export default function Chat() {
     return () => window.removeEventListener('resize', setViewportHeight);
   }, []);
 
+  // Auto-load first conversation if none is selected
   useEffect(() => {
-    if (showSidebar || showMobileMenu) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+    if (conversations.length > 0 && !activeConversationId) {
+      loadConversation(conversations[0]._id);
     }
+  }, [conversations]);
+
+  // Prevent background scroll when sidebar is open
+  useEffect(() => {
+    document.body.style.overflow = (showSidebar || showMobileMenu) ? 'hidden' : '';
   }, [showSidebar, showMobileMenu]);
 
+  // Scroll to bottom on new messages
   useEffect(() => {
     chatRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-    const newMessage = { prompt: input, response: '...' };
-    setMessages(prev => [...prev, newMessage]);
-    setInput('');
-    try {
-      const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, { message: input }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMessages(prev => [...prev.slice(0, -1), { prompt: input, response: res.data.reply }]);
-    } catch (err) {
-      alert('Error sending message');
-    }
-  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -81,10 +119,19 @@ export default function Chat() {
     window.location.href = '/login';
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    setActiveConversationId(null);
+    setInput('');
+  };
+
   return (
     <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
-      {/* Add Sidebar and MobileSidebar later */}
-      <Sidebar messages={messages} />
+      <Sidebar
+        conversations={conversations}
+        onSelectConversation={loadConversation}
+        onNewChat={handleNewChat}
+      />
       <MobileSidebar
         messages={messages}
         showSidebar={showSidebar}
