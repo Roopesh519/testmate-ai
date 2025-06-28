@@ -133,9 +133,11 @@ export default function Chat() {
         onNewChat={handleNewChat}
       />
       <MobileSidebar
-        messages={messages}
+        conversations={conversations}
         showSidebar={showSidebar}
         setShowSidebar={setShowSidebar}
+        onSelectConversation={loadConversation}
+        onNewChat={handleNewChat}
       />
       <div className="flex flex-col flex-1 relative min-h-0">
         <ChatHeader
