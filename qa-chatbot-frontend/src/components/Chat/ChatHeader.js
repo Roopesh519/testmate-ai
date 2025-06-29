@@ -50,8 +50,21 @@ export default function ChatHeader({ setShowSidebar, showMobileMenu, setShowMobi
         </button>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center space-x-4">
-          {['Profile', 'Settings', 'Help'].map(label => (
+        <div className="hidden md:flex items-center space-x-7">
+          <a
+            href="/chat"
+            onClick={() => setShowMobileMenu(false)}
+            className="text-white hover:text-gray-300 transition-colors"
+          >
+            Chat
+          </a>
+          <a
+            href="/profile"
+            className="text-white hover:text-gray-300 transition-colors"
+          >
+            Profile
+          </a>
+          {['Settings', 'Help'].map(label => (
             <button key={label} onClick={() => alert(`${label} clicked`)} className="text-white hover:text-gray-300 transition-colors">
               {label}
             </button>
@@ -70,7 +83,21 @@ export default function ChatHeader({ setShowSidebar, showMobileMenu, setShowMobi
             ref={mobileMenuRef}
             className="absolute top-14 right-0 bg-gray-800 text-white rounded-lg shadow-lg z-40 w-40 py-2 md:hidden"
           >
-            {['Profile', 'Settings', 'Help'].map(label => (
+            <a
+              href="/chat"
+              onClick={() => setShowMobileMenu(false)}
+              className="block px-4 py-2 text-white hover:bg-gray-700 transition-colors"
+            >
+              Chat
+            </a>
+            <a
+              href="/profile"
+              onClick={() => setShowMobileMenu(false)}
+              className="block px-4 py-2 text-white hover:bg-gray-700 transition-colors"
+            >
+              Profile
+            </a>
+            {['Settings', 'Help'].map(label => (
               <button
                 key={label}
                 onClick={() => {

@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
+import ChatPage from './pages/Chat'; // Your chatbot UI
+import ProfilePage from './pages/ProfilePage';
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
@@ -40,6 +42,8 @@ const App = () => {
           path="*"
           element={<Navigate to={isLoggedIn ? "/chat" : "/login"} />}
         />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </Router>
   );

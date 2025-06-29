@@ -12,6 +12,7 @@ console.log('🛢️ MONGO_URI loaded:', !!process.env.MONGO_URI);
 
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
+import profileRoutes from './routes/profile.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/profile', profileRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
