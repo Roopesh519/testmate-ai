@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import Spline from '@splinetool/react-spline';
+import DotGrid from '../components/Chat/DotGrid';
 
 export default function HomePage() {
     useEffect(() => {
@@ -50,10 +51,33 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* 3D Spline Model */}
+            {/* 3D Spline Model with DotGrid Background */}
             <section className="w-full max-w-6xl aspect-[16/9] px-4 mb-12 flex-1 flex items-center">
-                <div className="w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white border-opacity-20 bg-white bg-opacity-10 backdrop-blur-sm">
-                    <Spline scene="https://prod.spline.design/RDwCN0TjO1KiZfUu/scene.splinecode" />
+                <div className="w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white border-opacity-20 bg-gradient-to-br from-gray-900 to-black relative">
+                    {/* DotGrid Background - only in this container */}
+                    <div className="absolute inset-0 w-full h-full">
+                        <DotGrid
+                            dotSize={4}
+                            gap={15}
+                            baseColor="#ffffff20"
+                            activeColor="#8b5cf6"
+                            proximity={80}
+                            shockRadius={150}
+                            shockStrength={2}
+                            resistance={500}
+                            returnDuration={1.0}
+                            className="w-full h-full"
+                        />
+                    </div>
+                    {/* 3D Spline Model on top */}
+                    <div className="relative z-10 w-full h-full">
+                        <Spline scene="https://prod.spline.design/RDwCN0TjO1KiZfUu/scene.splinecode" />
+                        
+                        {/* Overlay to cover "Built with Spline" watermark */}
+                        <div className="absolute bottom-7 right-4 z-20 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-lg backdrop-blur-sm bg-opacity-90">
+                            Powered by TestMate AI
+                        </div>
+                    </div>
                 </div>
             </section>
 
