@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Chat from './pages/Chat';
 import ChatPage from './pages/Chat'; // Your chatbot UI
 import ProfilePage from './pages/ProfilePage';
+import HomePage from './pages/HomePage';
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
@@ -26,6 +27,7 @@ const App = () => {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<HomePage />} />
         <Route
           path="/login"
           element={!isLoggedIn ? <Login /> : <Navigate to="/chat" />}
