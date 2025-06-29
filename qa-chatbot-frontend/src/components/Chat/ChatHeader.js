@@ -35,7 +35,13 @@ export default function ChatHeader({ setShowSidebar, showMobileMenu, setShowMobi
       <div className="flex flex-col items-center mt-8 mb-8">
         <div className="flex items-center gap-4 bg-white bg-opacity-90 border border-white border-opacity-20 rounded-xl p-2 shadow-lg">
           <img src="ai.png" alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
-          <h1 className="text-xl font-bold text-gray-900">TestMate AI</h1>
+          <a
+            href="/"
+            onClick={() => setShowMobileMenu(false)}
+            className="text-white hover:text-gray-300 transition-colors"
+          >
+            <h1 className="text-xl font-bold text-gray-900">TestMate AI</h1>
+          </a>
         </div>
       </div>
 
