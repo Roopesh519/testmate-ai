@@ -42,11 +42,47 @@ export default function Chat() {
     }
   };
 
+  const loadingMessages = [
+    "Thinking...",
+    "Typing your answer...",
+    "Gathering info...",
+    "Consulting the data hive...",
+    "One sec, almost there..."
+  ];
+
+  const handleUpdateConversationTitle = async (conversationId, newTitle) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // if using auth tokens
+        },
+        body: JSON.stringify({ title: newTitle })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update title');
+      
+      // Update your conversations state
+      setConversations(prev => 
+        prev.map(conv => 
+          conv._id === conversationId 
+            ? { ...conv, title: newTitle }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Error updating conversation title:', error);
+    }
+  };
+
   // Send message
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const newMessage = { prompt: input, response: '...' };
+    const randomLoadingMessage = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
+    const newMessage = { prompt: input, response: randomLoadingMessage };
+
     setMessages(prev => [...prev, newMessage]);
     setInput('');
 
@@ -131,6 +167,7 @@ export default function Chat() {
         conversations={conversations}
         onSelectConversation={loadConversation}
         onNewChat={handleNewChat}
+        onUpdateConversationTitle={handleUpdateConversationTitle}
       />
       <MobileSidebar
         conversations={conversations}
@@ -138,6 +175,7 @@ export default function Chat() {
         setShowSidebar={setShowSidebar}
         onSelectConversation={loadConversation}
         onNewChat={handleNewChat}
+        onUpdateConversationTitle={handleUpdateConversationTitle}
       />
       <div className="flex flex-col flex-1 relative min-h-0">
         <ChatHeader

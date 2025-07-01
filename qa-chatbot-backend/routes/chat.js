@@ -110,11 +110,35 @@ router.delete('/conversations/:id', authMiddleware, async (req, res) => {
 
 // PATCH rename conversation
 router.patch('/conversations/:id', authMiddleware, async (req, res) => {
-  const { id } = req.params;
-  const { title } = req.body;
-  if (!title) return res.status(400).json({ error: 'Title is required' });
-  const updated = await Conversation.findByIdAndUpdate(id, { title }, { new: true });
-  res.json(updated);
+  console.log('🔧 PATCH route hit!', {
+    id: req.params.id,
+    body: req.body,
+    headers: req.headers
+  });
+  
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
+    
+    if (!title) {
+      console.log('❌ No title provided');
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    
+    console.log('🔍 Looking for conversation with ID:', id);
+    const updated = await Conversation.findByIdAndUpdate(id, { title }, { new: true });
+    
+    if (!updated) {
+      console.log('❌ Conversation not found');
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+    
+    console.log('✅ Conversation updated:', updated);
+    res.json(updated);
+  } catch (error) {
+    console.error('❌ Error in PATCH route:', error);
+    res.status(500).json({ error: 'Failed to update conversation' });
+  }
 });
 
 export default router;
