@@ -21,29 +21,42 @@ function getTogetherClient() {
 // POST message to existing conversation or create a new one
 router.post('/', authMiddleware, async (req, res) => {
   const userId = req.user?.id;
-  const { message, conversationId } = req.body;
+  const { messages, conversationId } = req.body;
 
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'Message is required and must be a string' });
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'Messages array is required' });
+  }
+
+  // Check that the last message is from user
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage.role !== 'user' || typeof lastMessage.content !== 'string') {
+    return res.status(400).json({ error: 'Last message must be from user and must be a string' });
   }
 
   try {
     const client = getTogetherClient();
+
+    // Add a system prompt at the top, always
+    const messagesWithSystem = [
+      { role: "system", content: "You are a QA assistant. Help testers with automation, BDD, and TDD." },
+      ...messages
+    ];
+
     const response = await client.chat.completions.create({
-      messages: [
-        { role: "system", content: "You are a QA assistant. Help testers with automation, BDD, and TDD." },
-        { role: "user", content: message }
-      ],
+      messages: messagesWithSystem,
       model: "deepseek-ai/DeepSeek-V3"
     });
 
     const reply = response.choices?.[0]?.message?.content || '[No reply]';
     let conversation;
 
+    // Save only the last exchange for storage
+    const userMessage = lastMessage.content;
+
     if (conversationId) {
       conversation = await Conversation.findById(conversationId);
       if (conversation) {
-        conversation.messages.push({ prompt: message, response: reply });
+        conversation.messages.push({ prompt: userMessage, response: reply });
         await conversation.save();
       }
     }
@@ -52,8 +65,8 @@ router.post('/', authMiddleware, async (req, res) => {
     if (!conversation) {
       conversation = new Conversation({
         userId,
-        title: message.slice(0, 30), // first message becomes the title
-        messages: [{ prompt: message, response: reply }]
+        title: userMessage.slice(0, 30),
+        messages: [{ prompt: userMessage, response: reply }]
       });
       await conversation.save();
     }
