@@ -11,3 +11,4 @@ qa-chatbot-frontend/.env
 
 .env
 */.env
+qa-chatbot-backend/uploads

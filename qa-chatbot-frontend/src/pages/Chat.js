@@ -60,13 +60,13 @@ export default function Chat() {
         },
         body: JSON.stringify({ title: newTitle })
       });
-      
+
       if (!response.ok) throw new Error('Failed to update title');
-      
+
       // Update your conversations state
-      setConversations(prev => 
-        prev.map(conv => 
-          conv._id === conversationId 
+      setConversations(prev =>
+        prev.map(conv =>
+          conv._id === conversationId
             ? { ...conv, title: newTitle }
             : conv
         )
@@ -79,23 +79,23 @@ export default function Chat() {
   // Send message
   const sendMessage = async () => {
     if (!input.trim()) return;
-  
+
     const randomLoadingMessage = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
     const newMessage = { prompt: input, response: randomLoadingMessage };
-  
+
     // Show loading message in UI
     setMessages(prev => [...prev, newMessage]);
     setInput('');
-  
+
     // Build conversation history
     const conversationHistory = messages.flatMap(msg => ([
       { role: 'user', content: msg.prompt },
       { role: 'assistant', content: msg.response }
     ]));
-  
+
     // Add current user message at the end
     conversationHistory.push({ role: 'user', content: input });
-  
+
     try {
       const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, {
         messages: conversationHistory, // <-- IMPORTANT FIX HERE
@@ -103,22 +103,22 @@ export default function Chat() {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-  
+
       const reply = res.data.reply;
-  
+
       // Save conversation ID if it's a new one
       if (!activeConversationId && res.data.conversationId) {
         setActiveConversationId(res.data.conversationId);
         fetchConversations(); // Refresh UI
       }
-  
+
       // Replace loading with actual reply
       setMessages(prev => [...prev.slice(0, -1), { prompt: input, response: reply }]);
     } catch (err) {
       alert('Error sending message');
       console.error(err);
     }
-  };  
+  };
 
   // Initial effect to check auth and fetch conversations
   useEffect(() => {
@@ -202,7 +202,9 @@ export default function Chat() {
               input={input}
               setInput={setInput}
               sendMessage={sendMessage}
-              handleKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              token={token} // ✅ Add this
+              activeConversationId={activeConversationId} // ✅ Add this
+              setMessages={setMessages} // ✅ Add this
             />
           </div>
         </main>

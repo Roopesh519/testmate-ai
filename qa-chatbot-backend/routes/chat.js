@@ -3,6 +3,11 @@ import ChatHistory from '../models/ChatHistory.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import Together from 'together-ai';
 import Conversation from '../models/Conversation.js';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
+// import pdfParse from 'pdf-parse';
+import Tesseract from 'tesseract.js';
 
 const router = express.Router();
 
@@ -151,6 +156,80 @@ router.patch('/conversations/:id', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('❌ Error in PATCH route:', error);
     res.status(500).json({ error: 'Failed to update conversation' });
+  }
+});
+
+// 🗂️ Set up multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+});
+const upload = multer({ storage });
+
+// 📎 POST /chat/upload — Upload file and ask about it
+router.post('/upload', authMiddleware, upload.single('file'), async (req, res) => {
+  const { conversationId, followupQuestion } = req.body;
+  const userId = req.user?.id;
+  const file = req.file;
+
+  if (!file) return res.status(400).json({ error: 'No file uploaded' });
+
+  let extractedText = '';
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  try {
+    // 🧠 Extract text based on file type
+    if (ext === '.pdf') {
+      const pdfParse = (await import('pdf-parse')).default;
+      const dataBuffer = fs.readFileSync(file.path);
+      const pdfData = await pdfParse(dataBuffer);
+      extractedText = pdfData.text;
+    } else if (['.jpg', '.jpeg', '.png'].includes(ext)) {
+      const ocrResult = await Tesseract.recognize(file.path, 'eng');
+      extractedText = ocrResult.data.text;
+    } else {
+      return res.status(400).json({ error: 'Unsupported file type' });
+    }
+
+    if (!extractedText.trim()) {
+      return res.status(400).json({ error: 'No text found in file' });
+    }
+
+    // 🤖 Ask Together AI about the extracted content
+    const client = getTogetherClient();
+    const messages = [
+      { role: 'system', content: 'You are a helpful assistant. Answer based on the file content provided.' },
+      { role: 'user', content: `Here is the content of the uploaded file:\n\n${extractedText}` }
+    ];
+
+    if (followupQuestion) {
+      messages.push({ role: 'user', content: followupQuestion });
+    }
+
+    const response = await client.chat.completions.create({
+      model: 'deepseek-ai/DeepSeek-V3',
+      messages
+    });
+
+    const reply = response.choices?.[0]?.message?.content || '[No reply]';
+
+    // 💾 Save to conversation if exists
+    let conversation;
+    if (conversationId) {
+      conversation = await Conversation.findById(conversationId);
+      if (conversation) {
+        conversation.messages.push({
+          prompt: `📎 Uploaded: ${file.originalname}${followupQuestion ? `\n❓ ${followupQuestion}` : ''}`,
+          response: reply
+        });
+        await conversation.save();
+      }
+    }
+
+    res.json({ reply, fileName: file.originalname });
+  } catch (err) {
+    console.error('❌ File processing error:', err.message || err);
+    res.status(500).json({ error: 'Failed to process uploaded file' });
   }
 });
 
