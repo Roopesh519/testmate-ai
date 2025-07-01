@@ -52,9 +52,6 @@ export default function Login() {
 
         <h2 className="text-white text-xl font-semibold mb-6 text-center">Login</h2>
 
-        {/* Error message */}
-        {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
-
         <input
           type="email"
           placeholder="Email"
@@ -96,6 +93,10 @@ export default function Login() {
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
+        {/* Error message */}
+        <div className="mt-4">
+        {error && <p className="text-white text-sm mb-4 text-center">{error}</p>}
+        </div>
       </div>
     </div>
   );
