@@ -168,7 +168,7 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
             </div>
                     {/* Helper Text */}
         <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-          <span>Press Enter to send, Shift + Enter for new line</span>
+          <span>This feature is still in progress.</span>
           <span>Max file size: 10MB</span>
         </div>
           </div>
@@ -211,7 +211,7 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
           </div>
 
           {/* Send Button */}
-          <div className="flex-shrink-0 mb-2">
+          <div className="flex-shrink-0 ml-2 mb-2">
             <button
               onClick={sendMessage}
               disabled={!input.trim() || isUploading}
