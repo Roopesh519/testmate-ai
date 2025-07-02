@@ -166,13 +166,18 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
                 )}
               </button>
             </div>
+                    {/* Helper Text */}
+        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+          <span>Press Enter to send, Shift + Enter for new line</span>
+          <span>Max file size: 10MB</span>
+        </div>
           </div>
         )}
 
         {/* Main Input Section */}
-        <div className="flex items-end gap-3">
+        <div className="flex items-end gap-1">
           {/* File Upload Button */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mb-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -200,13 +205,13 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              placeholder="Ask your test-related question..."
+              placeholder="Ask anything..."
               className="w-full px-4 py-3 pr-12 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base resize-none max-h-[160px] overflow-y-auto placeholder-gray-500"
             />
           </div>
 
           {/* Send Button */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mb-2">
             <button
               onClick={sendMessage}
               disabled={!input.trim() || isUploading}
@@ -220,11 +225,6 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
           </div>
         </div>
 
-        {/* Helper Text */}
-        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-          <span>Press Enter to send, Shift + Enter for new line</span>
-          <span>Max file size: 10MB</span>
-        </div>
       </div>
     </div>
   );
