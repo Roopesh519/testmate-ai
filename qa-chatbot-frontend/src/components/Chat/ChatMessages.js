@@ -5,7 +5,35 @@ import rehypeHighlight from 'rehype-highlight';
 
 function CodeBlock({ inline, className, children, ...props }) {
   const [copied, setCopied] = React.useState(false);
-  const codeText = (Array.isArray(children) ? children[0] : children)?.toString().trim();
+  
+  // Better text extraction function that handles React elements recursively
+  const extractTextFromChildren = (children) => {
+    if (typeof children === 'string') {
+      return children;
+    }
+    
+    if (typeof children === 'number') {
+      return children.toString();
+    }
+    
+    if (Array.isArray(children)) {
+      return children.map(extractTextFromChildren).join('');
+    }
+    
+    if (React.isValidElement(children)) {
+      return extractTextFromChildren(children.props.children);
+    }
+    
+    if (children && typeof children === 'object' && children.props) {
+      return extractTextFromChildren(children.props.children);
+    }
+    
+    return '';
+  };
+
+  const codeText = React.useMemo(() => {
+    return extractTextFromChildren(children);
+  }, [children]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(codeText);
@@ -16,7 +44,7 @@ function CodeBlock({ inline, className, children, ...props }) {
   if (inline) {
     return (
       <code className="bg-gray-800 text-green-400 px-1 py-0.5 rounded text-xs font-mono break-all whitespace-pre-wrap max-w-full inline-block">
-        {codeText}
+        {children}
       </code>
     );
   }
@@ -25,7 +53,9 @@ function CodeBlock({ inline, className, children, ...props }) {
     <div className="relative group w-full my-2 max-w-full">
       <div className="bg-gray-900 rounded-md overflow-hidden max-w-full">
         <div className="flex items-center justify-between bg-gray-800 px-2 sm:px-3 py-1 min-w-0">
-          <span className="text-gray-400 text-xs font-medium truncate">Code</span>
+          <span className="text-gray-400 text-xs font-medium truncate">
+            {className ? className.replace('language-', '') : 'Code'}
+          </span>
           <button
             onClick={handleCopy}
             className="text-gray-400 hover:text-white text-xs px-1 sm:px-2 py-1 rounded transition-colors flex-shrink-0"
@@ -37,7 +67,7 @@ function CodeBlock({ inline, className, children, ...props }) {
           <pre className="p-2 sm:p-3 text-xs sm:text-sm min-w-0 max-w-full">
             <code 
               {...props} 
-              className="text-green-400 font-mono block whitespace-pre max-w-full"
+              className={`language-${className?.replace('language-', '') ?? ''} text-green-400 font-mono block whitespace-pre max-w-full`}
               style={{ 
                 wordWrap: 'break-word',
                 overflowWrap: 'break-word',
@@ -45,7 +75,7 @@ function CodeBlock({ inline, className, children, ...props }) {
                 whiteSpace: 'pre-wrap'
               }}
             >
-              {codeText}
+              {children}
             </code>
           </pre>
         </div>

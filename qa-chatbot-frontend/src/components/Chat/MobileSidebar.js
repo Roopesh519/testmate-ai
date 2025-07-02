@@ -10,6 +10,7 @@ export default function MobileSidebar({
 }) {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleSelect = (id) => {
     if (!editingId) {
@@ -56,6 +57,10 @@ export default function MobileSidebar({
     setShowSidebar(false);
   };
 
+  const filteredConversations = conversations.filter(conv =>
+    conv.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <>
       {showSidebar && (
@@ -79,23 +84,36 @@ export default function MobileSidebar({
               ×
             </button>
           </div>
+          
           <div className="p-4 border-b border-white border-opacity-20">
-            <button
-              onClick={() => {
-                onNewChat();
-                setShowSidebar(false);
-              }}
-              className="w-full text-left text-sm text-blue-400 hover:underline focus:outline-none"
-            >
-              + New Chat
-            </button>
+            <div className="flex justify-between items-center mb-3">
+              <button
+                onClick={() => {
+                  onNewChat();
+                  setShowSidebar(false);
+                }}
+                className="text-sm text-blue-400 hover:underline focus:outline-none"
+              >
+                + New Chat
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search conversation..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none focus:border-blue-400"
+            />
           </div>
+
           <div className="flex-1 p-4 overflow-y-auto">
-            {conversations.length === 0 ? (
-              <p className="text-gray-400 text-sm">No conversations yet</p>
+            {filteredConversations.length === 0 ? (
+              <p className="text-gray-400 text-sm">
+                {conversations.length === 0 ? 'No conversations yet' : 'No conversations found'}
+              </p>
             ) : (
               <ul className="space-y-3">
-                {conversations.map((conv) => (
+                {filteredConversations.map((conv) => (
                   <li
                     key={conv._id}
                     className="group relative"
@@ -117,14 +135,14 @@ export default function MobileSidebar({
                           />
                           <button
                             onClick={() => handleSaveEdit(conv._id)}
-                            className="text-green-400 hover:text-green-300 text-sm px-2"
+                            className="text-green-400 hover:text-green-300 text-xs"
                             title="Save"
                           >
                             ✓
                           </button>
                           <button
                             onClick={handleCancelEdit}
-                            className="text-red-400 hover:text-red-300 text-sm px-2"
+                            className="text-red-400 hover:text-red-300 text-xs"
                             title="Cancel"
                           >
                             ✕
@@ -135,7 +153,7 @@ export default function MobileSidebar({
                           <div className="text-sm text-blue-200 truncate pr-2">{conv.title}</div>
                           <button
                             onClick={(e) => handleStartEdit(conv, e)}
-                            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-gray-400 hover:text-white text-sm transition-opacity p-1"
+                            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-gray-400 hover:text-white text-xs transition-opacity"
                             title="Edit title"
                           >
                             <img src="compose.png" alt="Edit" className="w-4 h-4" />

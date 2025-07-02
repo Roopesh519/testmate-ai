@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 export default function Sidebar({ conversations, onSelectConversation, onNewChat, onUpdateConversationTitle }) {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleStartEdit = (conv, e) => {
-    e.stopPropagation(); // Prevent selecting the conversation
+    e.stopPropagation();
     setEditingId(conv._id);
     setEditTitle(conv.title);
   };
@@ -28,35 +29,43 @@ export default function Sidebar({ conversations, onSelectConversation, onNewChat
   };
 
   const handleKeyDown = (e, convId) => {
-    if (e.key === 'Enter') {
-      handleSaveEdit(convId);
-    } else if (e.key === 'Escape') {
-      handleCancelEdit();
-    }
+    if (e.key === 'Enter') handleSaveEdit(convId);
+    else if (e.key === 'Escape') handleCancelEdit();
   };
+
+  const filteredConversations = conversations.filter(conv =>
+    conv.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <aside className="hidden md:block w-80 bg-gray-900 bg-opacity-95 backdrop-blur-md border-r border-white border-opacity-20">
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b border-white border-opacity-20 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-white">Chat History</h3>
-          <button
-            onClick={onNewChat}
-            className="text-sm text-blue-400 hover:underline focus:outline-none"
-          >
-            + New Chat
-          </button>
+        <div className="p-4 border-b border-white border-opacity-20">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-bold text-white">Chat History</h3>
+            <button
+              onClick={onNewChat}
+              className="text-sm text-blue-400 hover:underline focus:outline-none"
+            >
+              + New Chat
+            </button>
+          </div>
+          <input
+            type="text"
+            placeholder="Search conversation..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-3 py-2 text-sm bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none focus:border-blue-400"
+          />
         </div>
+
         <div className="flex-1 p-4 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <p className="text-gray-400 text-sm">No conversations yet</p>
+          {filteredConversations.length === 0 ? (
+            <p className="text-gray-400 text-sm">No conversations found</p>
           ) : (
             <ul className="space-y-3">
-              {conversations.map(conv => (
-                <li
-                  key={conv._id}
-                  className="group relative"
-                >
+              {filteredConversations.map(conv => (
+                <li key={conv._id} className="group relative">
                   <div
                     onClick={() => !editingId && onSelectConversation(conv._id)}
                     className="p-3 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 transition-colors cursor-pointer"
