@@ -22,7 +22,7 @@ export default function HomePage() {
             className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex flex-col items-center"
         >
             <header className="w-full flex justify-center items-center p-4 bg-white bg-opacity-10 backdrop-blur-md border-b border-white border-opacity-20 flex-shrink-0 relative z-30 h-16">
-                {/* Logo */}
+                {/* Logo
                 <div className="flex items-center gap-4 bg-white bg-opacity-90 border border-white border-opacity-20 rounded-xl p-2 shadow-lg">
                     <img src="ai.png" alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
                     <a
@@ -31,6 +31,10 @@ export default function HomePage() {
                     >
                         <h1 className="text-xl font-bold text-gray-900">TestMate AI</h1>
                     </a>
+                </div> */}
+                {/* Logo */}
+                <div className="flex flex-col items-center mt-8 mb-8">
+                    <img src="testmate-ai.png" alt="Logo" className="w-30 h-8 rounded-lg object-cover" />
                 </div>
             </header>
 
@@ -96,7 +100,7 @@ export default function HomePage() {
                     {/* 3D Spline Model on top */}
                     <div className="relative z-10 w-full h-full">
                         <Spline scene="https://prod.spline.design/RDwCN0TjO1KiZfUu/scene.splinecode" />
-                        
+
                         {/* Overlay to cover "Built with Spline" watermark */}
                         <div className="absolute bottom-7 right-4 z-20 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-lg backdrop-blur-sm bg-opacity-90">
                             Powered by TestMate AI
