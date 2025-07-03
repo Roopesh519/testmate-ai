@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import ChatHeader from '../components/Chat/ChatHeader';
 import ChatMessages from '../components/Chat/ChatMessages';
 import ChatInput from '../components/Chat/ChatInput';
 import Sidebar from '../components/Chat/Sidebar';
 import MobileSidebar from '../components/Chat/MobileSidebar';
+
+import { fetchWithRefresh } from '../utils/fetchWithRefresh';
+import { getAccessToken, removeAccessToken } from '../utils/auth';
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -13,15 +15,26 @@ export default function Chat() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ prevent early redirect flicker
 
   const chatRef = useRef();
-  const token = localStorage.getItem('token');
 
-  // Fetch list of all conversations
+  // ✅ Get token after mount (not at top-level)
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+
+    fetchConversations().finally(() => setLoading(false)); // Stop loading after fetch
+  }, []);
+
   const fetchConversations = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetchWithRefresh({
+        url: `${process.env.REACT_APP_API_BASE_URL}/chat/conversations`,
+        method: 'GET'
       });
       setConversations(res.data.conversations);
     } catch (err) {
@@ -29,11 +42,11 @@ export default function Chat() {
     }
   };
 
-  // Load messages of a specific conversation
   const loadConversation = async (conversationId) => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetchWithRefresh({
+        url: `${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`,
+        method: 'GET'
       });
       setMessages(res.data.messages);
       setActiveConversationId(conversationId);
@@ -52,18 +65,13 @@ export default function Chat() {
 
   const handleUpdateConversationTitle = async (conversationId, newTitle) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`, {
+      await fetchWithRefresh({
+        url: `${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`,
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // if using auth tokens
-        },
-        body: JSON.stringify({ title: newTitle })
+        headers: { 'Content-Type': 'application/json' },
+        data: { title: newTitle }
       });
 
-      if (!response.ok) throw new Error('Failed to update title');
-
-      // Update your conversations state
       setConversations(prev =>
         prev.map(conv =>
           conv._id === conversationId
@@ -76,43 +84,38 @@ export default function Chat() {
     }
   };
 
-  // Send message
   const sendMessage = async () => {
     if (!input.trim()) return;
 
     const randomLoadingMessage = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
     const newMessage = { prompt: input, response: randomLoadingMessage };
-
-    // Show loading message in UI
     setMessages(prev => [...prev, newMessage]);
     setInput('');
 
-    // Build conversation history
     const conversationHistory = messages.flatMap(msg => ([
       { role: 'user', content: msg.prompt },
       { role: 'assistant', content: msg.response }
     ]));
 
-    // Add current user message at the end
     conversationHistory.push({ role: 'user', content: input });
 
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, {
-        messages: conversationHistory, // <-- IMPORTANT FIX HERE
-        conversationId: activeConversationId
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetchWithRefresh({
+        url: `${process.env.REACT_APP_API_BASE_URL}/chat`,
+        method: 'POST',
+        data: {
+          messages: conversationHistory,
+          conversationId: activeConversationId
+        }
       });
 
       const reply = res.data.reply;
 
-      // Save conversation ID if it's a new one
       if (!activeConversationId && res.data.conversationId) {
         setActiveConversationId(res.data.conversationId);
-        fetchConversations(); // Refresh UI
+        fetchConversations();
       }
 
-      // Replace loading with actual reply
       setMessages(prev => [...prev.slice(0, -1), { prompt: input, response: reply }]);
     } catch (err) {
       alert('Error sending message');
@@ -120,43 +123,23 @@ export default function Chat() {
     }
   };
 
-  // Initial effect to check auth and fetch conversations
-  useEffect(() => {
-    if (!token) {
-      alert('You must be logged in to use the chat.');
-      window.location.href = '/login';
-    }
-
-    fetchConversations();
-
-    const setViewportHeight = () => {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-
-    setViewportHeight();
-    window.addEventListener('resize', setViewportHeight);
-    return () => window.removeEventListener('resize', setViewportHeight);
-  }, []);
-
-  // Auto-load first conversation if none is selected
+  // Load first conversation
   useEffect(() => {
     if (conversations.length > 0 && !activeConversationId) {
       loadConversation(conversations[0]._id);
     }
   }, [conversations]);
 
-  // Prevent background scroll when sidebar is open
   useEffect(() => {
     document.body.style.overflow = (showSidebar || showMobileMenu) ? 'hidden' : '';
   }, [showSidebar, showMobileMenu]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     chatRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleLogout = () => {
+    removeAccessToken();
     localStorage.clear();
     sessionStorage.clear();
     setMessages([]);
@@ -171,6 +154,14 @@ export default function Chat() {
     setActiveConversationId(null);
     setInput('');
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-lg font-medium">
+        Loading chat...
+      </div>
+    );
+  }
 
   return (
     <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
@@ -202,9 +193,8 @@ export default function Chat() {
               input={input}
               setInput={setInput}
               sendMessage={sendMessage}
-              token={token} // ✅ Add this
-              activeConversationId={activeConversationId} // ✅ Add this
-              setMessages={setMessages} // ✅ Add this
+              activeConversationId={activeConversationId}
+              setMessages={setMessages}
             />
           </div>
         </main>

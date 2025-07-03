@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios'; // ✅ make sure this is installed and imported
+import axios from 'axios';
+import { setAccessToken } from '../utils/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,18 +21,18 @@ export default function Login() {
       setError('');
       setLoading(true);
 
-      // ✅ Real API call
       const res = await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}/auth/login`,
-        { email, password }
+        { email, password },
+        { withCredentials: true } // ✅ This sends/receives the refresh token cookie
       );
 
-      const token = res.data.token;
-      if (token) {
-        localStorage.setItem('token', token);
-        window.location.href = '/chat';
+      const { accessToken } = res.data;
+      if (accessToken) {
+        setAccessToken(accessToken); // ✅ Store access token using your util
+        window.location.href = '/chat'; // ✅ redirect
       } else {
-        setError('No token received from server.');
+        setError('No access token received.');
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
@@ -93,9 +94,9 @@ export default function Login() {
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
-        {/* Error message */}
+
         <div className="mt-4">
-        {error && <p className="text-white text-sm mb-4 text-center">{error}</p>}
+          {error && <p className="text-white text-sm mb-4 text-center">{error}</p>}
         </div>
       </div>
     </div>
