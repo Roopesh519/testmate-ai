@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import axios from 'axios';
+import AcceptanceCriteriaModal from '../modals/AcceptanceCriteriaModal';
+import TestCharterModal from '../modals/TestCharterModal';
 
 export default function ChatInput({ input, setInput, sendMessage, token, activeConversationId, setMessages }) {
   const textareaRef = useRef(null);
@@ -7,6 +9,10 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileQuestion, setFileQuestion] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Modal states
+  const [showAcceptanceModal, setShowAcceptanceModal] = useState(false);
+  const [showTestCharterModal, setShowTestCharterModal] = useState(false);
 
   // Automatically resize the textarea
   useEffect(() => {
@@ -100,9 +106,40 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Handle modal confirmations
+  const handleAcceptanceCriteriaConfirm = (prompt) => {
+    setInput(prompt);
+    setShowAcceptanceModal(false);
+  };
+
+  const handleTestCharterConfirm = (prompt) => {
+    setInput(prompt);
+    setShowTestCharterModal(false);
+  };
+
   return (
     <div className="border-t border-gray-200 bg-white">
       <div className="max-w-4xl mx-auto px-4 py-4">
+        {/* Options Row */}
+        <div className="mb-4 overflow-x-auto">
+          <div className="flex gap-3 min-w-max">
+            <div className="grid grid-cols-2 gap-3 min-w-max">
+              <button
+                onClick={() => setShowAcceptanceModal(true)}
+                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium whitespace-nowrap"
+              >
+                Acceptance Criteria
+              </button>
+              <button
+                onClick={() => setShowTestCharterModal(true)}
+                className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium whitespace-nowrap"
+              >
+                Test Charter
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* File Upload Section */}
         {selectedFile && (
           <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -166,11 +203,11 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
                 )}
               </button>
             </div>
-                    {/* Helper Text */}
-        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-          <span>This feature is still in progress.</span>
-          <span>Max file size: 10MB</span>
-        </div>
+            {/* Helper Text */}
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+              <span>This feature is still in progress.</span>
+              <span>Max file size: 10MB</span>
+            </div>
           </div>
         )}
 
@@ -224,8 +261,20 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
             </button>
           </div>
         </div>
-
       </div>
+
+      {/* Modals */}
+      <AcceptanceCriteriaModal
+        isOpen={showAcceptanceModal}
+        onClose={() => setShowAcceptanceModal(false)}
+        onConfirm={handleAcceptanceCriteriaConfirm}
+      />
+      
+      <TestCharterModal
+        isOpen={showTestCharterModal}
+        onClose={() => setShowTestCharterModal(false)}
+        onConfirm={handleTestCharterConfirm}
+      />
     </div>
   );
 }
