@@ -148,39 +148,6 @@ export default function HomePage() {
                         </p>
                     </div>
                 </div>
-
-                {/* Contact Section */}
-                <div className=" rounded-xl p-8 text-white text-center">
-                    <h2 className="text-2xl font-bold mb-4">Let's Connect</h2>
-                    <p className="mb-6 text-indigo-100">
-                        Have questions about TestMate AI or want to collaborate? We'd love to hear from you!
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-4">
-                        <a
-                            href="mailto:rsroopesh565@gmail.com"
-                            className="bg-white bg-opacity-20 hover:bg-opacity-30 px-6 py-3 rounded-lg font-medium transition-all duration-200 backdrop-blur-sm"
-                        >
-                            Email Us
-                        </a>
-                        <a
-                            href="https://github.com/Roopesh519/testmate-ai/"
-                            className="bg-white text-indigo-600 hover:bg-gray-100 px-6 py-3 rounded-lg font-medium transition-all duration-200"
-                        >
-                            Github
-                        </a>
-                    </div>
-                </div>
-
-                {/* Technology Stack */}
-                <div className="mt-8 text-center">
-                    <h3 className="text-lg font-semibold text-white-800 mb-4">Built with Technologies</h3>
-                    <div className="flex flex-wrap justify-center gap-3 text-sm">
-                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">React</span>
-                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">Node.js</span>
-                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">AI/ML</span>
-                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">MongoDB</span>
-                    </div>
-                </div>
             </section>
         </main>
     );
