@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios'; // ✅ make sure this is installed and imported
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -21,12 +20,19 @@ export default function Login() {
       setLoading(true);
 
       // ✅ Real API call
-      const res = await axios.post(
+      const res = await fetch(
         `${process.env.REACT_APP_API_BASE_URL}/auth/login`,
-        { email, password }
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        }
       );
 
-      const token = res.data.token;
+      const data = await res.json();
+      const token = data.token;
       if (token) {
         localStorage.setItem('token', token);
         window.location.href = '/chat';
@@ -34,10 +40,14 @@ export default function Login() {
         setError('No token received from server.');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
+  };
+
+  const navigateToRegister = () => {
+    window.location.href = 'http://localhost:3000/register?redirection_url=670f66759a11f41aa6daee68';
   };
 
   return (
@@ -89,13 +99,23 @@ export default function Login() {
         <button
           onClick={login}
           disabled={loading}
-          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition disabled:opacity-50"
+          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition disabled:opacity-50 mb-4"
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
+
         {/* Error message */}
-        <div className="mt-4">
         {error && <p className="text-white text-sm mb-4 text-center">{error}</p>}
+
+        {/* Registration link */}
+        <div className="text-center">
+          <p className="text-white text-sm mb-2">Don't have an account?</p>
+          <button
+            onClick={navigateToRegister}
+            className="text-blue-200 hover:text-white text-sm underline transition-colors"
+          >
+            Create an account
+          </button>
         </div>
       </div>
     </div>
