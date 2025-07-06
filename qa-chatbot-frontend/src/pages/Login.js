@@ -47,7 +47,7 @@ export default function Login() {
   };
 
   const navigateToRegister = () => {
-    window.location.href = 'http://localhost:3000/register?redirection_url=670f66759a11f41aa6daee68';
+    window.location.href = `/register?redirection_url=670f66759a11f41aa6daee68`;
   };
 
   return (
