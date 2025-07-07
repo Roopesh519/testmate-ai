@@ -105,8 +105,12 @@ export default function Login() {
         </button>
 
         {/* Error message */}
-        {error && <p className="text-white text-sm mb-4 text-center">{error}</p>}
-
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm text-center mb-4" role="alert">
+            <strong className="font-semibold"></strong> {error}
+          </div>
+        )}
+        
         {/* Registration link */}
         <div className="text-center">
           <p className="text-white text-sm mb-2">Don't have an account?</p>

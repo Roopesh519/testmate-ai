@@ -84,6 +84,93 @@ function CodeBlock({ inline, className, children, ...props }) {
   );
 }
 
+function CopyButton({ text, className = "" }) {
+  const [copied, setCopied] = useState(false);
+
+  // Function to convert markdown to HTML
+  const markdownToHtml = (markdown) => {
+    return markdown
+      // Code blocks
+      .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+      // Inline code
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      // Headers
+      .replace(/^### (.+$)/gm, '<h3>$1</h3>')
+      .replace(/^## (.+$)/gm, '<h2>$1</h2>')
+      .replace(/^# (.+$)/gm, '<h1>$1</h1>')
+      // Bold
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+      // Italic
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/_([^_]+)_/g, '<em>$1</em>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+      // Blockquotes
+      .replace(/^> (.+$)/gm, '<blockquote>$1</blockquote>')
+      // Unordered lists
+      .replace(/^[-*+] (.+$)/gm, '<li>$1</li>')
+      // Ordered lists
+      .replace(/^\d+\. (.+$)/gm, '<li>$1</li>')
+      // Line breaks
+      .replace(/\n/g, '<br>')
+      // Wrap list items in ul tags
+      .replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>')
+      // Clean up multiple ul tags
+      .replace(/<\/ul>\s*<ul>/g, '');
+  };
+
+  const handleCopy = async () => {
+    try {
+      const htmlContent = markdownToHtml(text);
+      const plainText = text.replace(/[#*`_\[\]()>-]/g, '').replace(/\n+/g, '\n').trim();
+      
+      // Create a ClipboardItem with both HTML and plain text
+      const clipboardItem = new ClipboardItem({
+        'text/html': new Blob([htmlContent], { type: 'text/html' }),
+        'text/plain': new Blob([plainText], { type: 'text/plain' })
+      });
+      
+      await navigator.clipboard.write([clipboardItem]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback to plain text if rich text copying fails
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackErr) {
+        console.error('Failed to copy text: ', fallbackErr);
+      }
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors ${className}`}
+      title="Copy response"
+    >
+      {copied ? (
+        <>
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Copied!
+        </>
+      ) : (
+        <>
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Copy
+        </>
+      )}
+    </button>
+  );
+}
+
 export default function ChatMessages({ messages, chatRef }) {
   return (
     <div className="flex-1 overflow-y-auto min-h-0 w-full">
@@ -100,7 +187,7 @@ export default function ChatMessages({ messages, chatRef }) {
             <div key={idx} className="w-full space-y-3">
               {/* User Message */}
               <div className="flex justify-end">
-                <div className="bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-3 max-w-[80%] shadow-sm">
+                <div className="bg-slate-600 text-white rounded-2xl rounded-br-md px-4 py-3 max-w-[80%] shadow-sm">
                   <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                     {msg.prompt}
                   </div>
@@ -196,6 +283,11 @@ export default function ChatMessages({ messages, chatRef }) {
                         )
                       }}
                     />
+                  </div>
+                  
+                  {/* Copy Response Button */}
+                  <div className="flex justify-end mt-2 pt-2 border-t border-gray-100">
+                    <CopyButton text={msg.response} />
                   </div>
                 </div>
               </div>
