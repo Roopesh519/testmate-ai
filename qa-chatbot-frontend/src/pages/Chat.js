@@ -173,7 +173,7 @@ export default function Chat() {
   };
 
   return (
-    <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
+    <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex">
       <Sidebar
         conversations={conversations}
         onSelectConversation={loadConversation}
