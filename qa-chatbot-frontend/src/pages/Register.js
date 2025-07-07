@@ -69,7 +69,7 @@ export default function Register() {
         </div>
 
         <h2 className="text-white text-xl font-semibold mb-6 text-center">Register</h2>
-        
+
         <input
           type="text"
           placeholder="Username"
@@ -77,7 +77,7 @@ export default function Register() {
           value={username}
           onChange={e => setUsername(e.target.value)}
         />
-        
+
         <input
           type="email"
           placeholder="Email"
@@ -85,7 +85,7 @@ export default function Register() {
           value={email}
           onChange={e => setEmail(e.target.value)}
         />
-        
+
         <div className="relative w-full mb-6">
           <input
             type={showPassword ? 'text' : 'password'}
@@ -121,8 +121,12 @@ export default function Register() {
         </button>
 
         {/* Error message */}
-        {error && <p className="text-white text-sm mb-4 text-center">{error}</p>}
-
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm text-center mb-4" role="alert">
+            <strong className="font-semibold"></strong> {error}
+          </div>
+        )}
+        
         {/* Login link */}
         <div className="text-center">
           <p className="text-white text-sm mb-2">Already have an account?</p>
