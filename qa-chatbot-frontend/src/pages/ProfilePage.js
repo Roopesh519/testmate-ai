@@ -84,7 +84,7 @@ export default function ProfilePage() {
 
     if (!user) {
         return (
-            <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
+            <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex">
                 <div className="flex flex-col flex-1 relative min-h-0">
                     <ChatHeader
                         setShowSidebar={() => { }} // No sidebar functionality
@@ -105,7 +105,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
+        <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex">
             <div className="flex flex-col flex-1 relative min-h-0">
                 <ChatHeader
                     setShowSidebar={() => { }} // No sidebar functionality
