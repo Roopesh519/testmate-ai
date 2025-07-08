@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+import { User, Mail, Lock, Edit3, Save, X, Check, Camera, Shield, Settings } from 'lucide-react';
 import ChatHeader from '../components/Chat/ChatHeader';
 
 export default function ProfilePage() {
@@ -9,6 +9,11 @@ export default function ProfilePage() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [profileImage, setProfileImage] = useState(null);
+    const [showPasswordField, setShowPasswordField] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const fileInputRef = useRef(null);
 
     const token = localStorage.getItem('token');
 
@@ -21,11 +26,12 @@ export default function ProfilePage() {
 
         const fetchProfile = async () => {
             try {
-                const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/profile`, {
+                const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/profile`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                setUser(res.data);
-                setName(res.data.username); // backend uses `username`, not `name`
+                const userData = await res.json();
+                setUser(userData);
+                setName(userData.username); // backend uses `username`, not `name`
             } catch (err) {
                 setError('Failed to load profile');
             }
@@ -49,30 +55,58 @@ export default function ProfilePage() {
         document.body.style.overflow = showMobileMenu ? 'hidden' : '';
     }, [showMobileMenu]);
 
-    const handleUpdate = async (e) => {
-        e.preventDefault();
+    const handleUpdate = async () => {
         setError('');
         setMessage('');
+        setIsLoading(true);
 
         try {
-            await axios.put(
+            const res = await fetch(
                 `${process.env.REACT_APP_API_BASE_URL}/profile`,
-                { name, password: password || undefined },
-                { headers: { Authorization: `Bearer ${token}` } }
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name, password: password || undefined })
+                }
             );
+
+            if (!res.ok) {
+                throw new Error('Update failed');
+            }
+
             setMessage('Profile updated successfully!');
             setPassword('');
+            setIsEditing(false);
+            setShowPasswordField(false);
+            
+            // Update user data
+            setUser(prev => ({ ...prev, username: name }));
+            
             // Clear success message after 5 seconds
             setTimeout(() => {
                 setMessage('');
             }, 5000);
         } catch (err) {
             setError('Update failed');
-
-            // Clear error message after 5 seconds
             setTimeout(() => {
                 setError('');
             }, 5000);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setProfileImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -80,6 +114,19 @@ export default function ProfilePage() {
         localStorage.clear();
         sessionStorage.clear();
         window.location.href = '/login';
+    };
+
+    const getInitials = (name) => {
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
     };
 
     if (!user) {
@@ -95,7 +142,12 @@ export default function ProfilePage() {
                     <main className="flex-1 p-4 min-h-0 pb-0">
                         <div className="flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl min-h-0 h-[calc(100%-0.80rem)]">
                             <div className="flex-1 flex items-center justify-center text-gray-600">
-                                <p className="text-lg">Loading profile...</p>
+                                <div className="text-center">
+                                    <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse">
+                                        <User className="w-8 h-8 text-white" />
+                                    </div>
+                                    <p className="text-lg animate-pulse">Loading profile...</p>
+                                </div>
                             </div>
                         </div>
                     </main>
@@ -116,75 +168,221 @@ export default function ProfilePage() {
                 <main className="flex-1 p-4 min-h-0 pb-0">
                     <div className="flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl min-h-0 h-[calc(100%-0.80rem)]">
                         <div className="flex-1 overflow-y-auto">
-                            <div className="max-w-2xl mx-auto p-6">
-                                <h1 className="text-2xl font-bold mb-6 text-gray-800">My Profile</h1>
-
-                                <form onSubmit={handleUpdate} className="space-y-4">
-                                    <div>
-                                        <label className="block font-medium mb-1 text-gray-700">User ID</label>
-                                        <input
-                                            type="text"
-                                            value={user._id}
-                                            readOnly
-                                            className="w-full bg-gray-100 border border-gray-300 rounded-lg p-3 text-gray-600"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-medium mb-1 text-gray-700">Email</label>
-                                        <input
-                                            type="email"
-                                            value={user.email}
-                                            readOnly
-                                            className="w-full bg-gray-100 border border-gray-300 rounded-lg p-3 text-gray-600"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-medium mb-1 text-gray-700">Name</label>
-                                        <input
-                                            type="text"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            className="w-full border text-gray-800 border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-medium mb-1 text-gray-700">New Password</label>
-                                        <input
-                                            type="password"
-                                            value={password}
-                                            placeholder="Password change disabled"
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            disabled
-                                            className="w-full border border-gray-300 rounded-lg p-3 text-gray-500 placeholder-gray-400 bg-gray-100 cursor-not-allowed"
-                                        />
-                                    </div>
-
+                            <div className="max-w-4xl mx-auto p-6">
+                                {/* Edit Toggle */}
+                                <div className="flex justify-between items-center mb-6">
+                                    <h1 className="text-2xl font-bold text-gray-800">My Profile</h1>
                                     <button
-                                        type="submit"
-                                        className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                        onClick={() => setIsEditing(!isEditing)}
+                                        className="flex items-center space-x-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-all duration-200"
                                     >
-                                        Update Profile
+                                        {isEditing ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                                        <span>{isEditing ? 'Cancel' : 'Edit'}</span>
                                     </button>
-                                </form>
+                                </div>
+                                {/* Profile Header */}
+                                <div className="relative mb-8">
+                                    <div className="h-32 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 rounded-2xl relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+                                        <div className="absolute bottom-12 left-6 text-white">
+                                            <h2 className="text-2xl font-bold">Welcome back, {user.username}!</h2>
+                                            <p className="text-indigo-100">Manage your profile settings</p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Profile Image */}
+                                    <div className="absolute -bottom-14 left-6">
+                                        <div className="relative">
+                                            <div className="w-24 h-24 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-xl border-4 border-white overflow-hidden">
+                                                {profileImage ? (
+                                                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    getInitials(user.username)
+                                                )}
+                                            </div>
+                                            {isEditing && (
+                                                <button
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-500 hover:bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-200"
+                                                >
+                                                    <Camera className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                className="hidden"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
-                                {message && (
-                                    <div className="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-lg">
-                                        {message}
+                                {/* Stats Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 mt-16">
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="p-2 bg-blue-500 rounded-lg">
+                                                <User className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600">Member since</p>
+                                                <p className="font-semibold text-gray-800">{formatDate(user.joinDate || user.createdAt)}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
-                                {error && (
-                                    <div className="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg">
-                                        {error}
+                                    
+                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="p-2 bg-green-500 rounded-lg">
+                                                <Shield className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600">Account Status</p>
+                                                <p className="font-semibold text-gray-800 flex items-center">
+                                                    <Check className="w-4 h-4 text-green-500 mr-1" />
+                                                    Active
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
+                                    
+                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="p-2 bg-purple-500 rounded-lg">
+                                                <Settings className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600">User ID</p>
+                                                <p className="font-semibold text-gray-800 text-sm font-mono">{user._id.substring(0, 8)}...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Profile Form */}
+                                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                                    <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center">
+                                        <Settings className="w-5 h-5 mr-2 text-indigo-500" />
+                                        Account Settings
+                                    </h3>
+
+                                    <div className="space-y-6">
+                                        {/* User ID */}
+                                        <div>
+                                            <label className="block font-medium mb-2 text-gray-700 flex items-center">
+                                                <User className="w-4 h-4 mr-2 text-gray-500" />
+                                                User ID
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={user._id}
+                                                readOnly
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-600 font-mono text-sm"
+                                            />
+                                        </div>
+
+                                        {/* Email */}
+                                        <div>
+                                            <label className="block font-medium mb-2 text-gray-700 flex items-center">
+                                                <Mail className="w-4 h-4 mr-2 text-gray-500" />
+                                                Email Address
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={user.email}
+                                                readOnly
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-600"
+                                            />
+                                        </div>
+
+                                        {/* Name */}
+                                        <div>
+                                            <label className="block font-medium mb-2 text-gray-700 flex items-center">
+                                                <User className="w-4 h-4 mr-2 text-gray-500" />
+                                                Display Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                disabled={!isEditing}
+                                                className={`w-full border rounded-xl p-4 transition-all duration-200 ${
+                                                    isEditing 
+                                                        ? 'border-indigo-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-gray-800' 
+                                                        : 'bg-gray-50 border-gray-200 text-gray-600'
+                                                } focus:outline-none`}
+                                            />
+                                        </div>
+
+                                        {/* Password */}
+                                        <div>
+                                            <label className="block font-medium mb-2 text-gray-700 flex items-center">
+                                                <Lock className="w-4 h-4 mr-2 text-gray-500" />
+                                                New Password
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={password}
+                                                placeholder="Password change disabled"
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                disabled
+                                                className="w-full border border-gray-300 rounded-xl p-4 text-gray-500 placeholder-gray-400 bg-gray-100 cursor-not-allowed"
+                                            />
+                                        </div>
+
+                                        {/* Submit Button */}
+                                        {isEditing && (
+                                            <button
+                                                onClick={handleUpdate}
+                                                disabled={isLoading}
+                                                className={`w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 ${
+                                                    isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:from-indigo-600 hover:to-purple-700'
+                                                }`}
+                                            >
+                                                {isLoading ? (
+                                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <>
+                                                        <Save className="w-5 h-5" />
+                                                        <span>Update Profile</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+
+                                    </div>
+
+                                    {/* Messages */}
+                                    {message && (
+                                        <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 rounded-xl flex items-center animate-fade-in">
+                                            <Check className="w-5 h-5 mr-2" />
+                                            {message}
+                                        </div>
+                                    )}
+                                    {error && (
+                                        <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 text-red-700 rounded-xl flex items-center animate-fade-in">
+                                            <X className="w-5 h-5 mr-2" />
+                                            {error}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </main>
             </div>
+
+            <style jsx>{`
+                @keyframes fade-in {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in {
+                    animation: fade-in 0.3s ease-out;
+                }
+            `}</style>
         </div>
     );
 }
