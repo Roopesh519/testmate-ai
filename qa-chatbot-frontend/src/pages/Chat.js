@@ -164,7 +164,7 @@ export default function Chat() {
   }
 
   return (
-    <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex">
+    <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex">
       <Sidebar
         conversations={conversations}
         onSelectConversation={loadConversation}
@@ -185,6 +185,7 @@ export default function Chat() {
           showMobileMenu={showMobileMenu}
           setShowMobileMenu={setShowMobileMenu}
           handleLogout={handleLogout}
+          isOnChatPage={true}
         />
         <main className="flex-1 p-1 min-h-0 pb-0">
           <div className="flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 shadow-xl min-h-0 h-[calc(100%-0.80rem)]">

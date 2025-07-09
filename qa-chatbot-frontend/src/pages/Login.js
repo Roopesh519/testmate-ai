@@ -21,10 +21,16 @@ export default function Login() {
       setError('');
       setLoading(true);
 
-      const res = await axios.post(
+      // ✅ Real API call
+      const res = await fetch(
         `${process.env.REACT_APP_API_BASE_URL}/auth/login`,
-        { email, password },
-        { withCredentials: true } // ✅ This sends/receives the refresh token cookie
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        }
       );
 
       const { accessToken } = res.data;
@@ -35,14 +41,18 @@ export default function Login() {
         setError('No access token received.');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
+  const navigateToRegister = () => {
+    window.location.href = `/register?redirection_url=670f66759a11f41aa6daee68`;
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 px-4">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
       <div className="bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-2xl shadow-2xl p-8 w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
@@ -90,13 +100,27 @@ export default function Login() {
         <button
           onClick={login}
           disabled={loading}
-          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition disabled:opacity-50"
+          className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition disabled:opacity-50 mb-4"
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
 
-        <div className="mt-4">
-          {error && <p className="text-white text-sm mb-4 text-center">{error}</p>}
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm text-center mb-4" role="alert">
+            <strong className="font-semibold"></strong> {error}
+          </div>
+        )}
+        
+        {/* Registration link */}
+        <div className="text-center">
+          <p className="text-white text-sm mb-2">Don't have an account?</p>
+          <button
+            onClick={navigateToRegister}
+            className="text-blue-200 hover:text-white text-sm underline transition-colors"
+          >
+            Create an account
+          </button>
         </div>
       </div>
     </div>

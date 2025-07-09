@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-export default function ChatHeader({ setShowSidebar, showMobileMenu, setShowMobileMenu, handleLogout }) {
+export default function ChatHeader({ setShowSidebar, showMobileMenu, setShowMobileMenu, handleLogout, isOnChatPage }) {
   const mobileMenuRef = useRef();
 
   useEffect(() => {
@@ -24,13 +24,12 @@ export default function ChatHeader({ setShowSidebar, showMobileMenu, setShowMobi
   return (
     <header className="flex justify-between items-center p-4 bg-white bg-opacity-10 backdrop-blur-md border-b border-white border-opacity-20 flex-shrink-0 relative z-30 h-16">
       {/* Sidebar toggle for mobile */}
+      {isOnChatPage && (
       <button className="p-2 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors md:hidden"
         onClick={() => setShowSidebar(true)}>
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <img src='layouting.png' alt='Layouting' className='w-6 h-6' />
       </button>
-
+      )}
       {/* Logo */}
       <div className="flex flex-col items-center mt-8 mb-8">
         <a
@@ -39,18 +38,7 @@ export default function ChatHeader({ setShowSidebar, showMobileMenu, setShowMobi
           className="text-white hover:text-gray-300 transition-colors"
         >
           <img src="testmate-ai.png" alt="Logo" className="w-30 h-8 rounded-lg object-cover" />
-          </a>
-          {/* <div className="flex items-center gap-4 bg-white bg-opacity-90 border border-white border-opacity-20 rounded-xl p-2 shadow-lg"> */}
-          {/* <img src="ai.png" alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
-          <a
-            href="/"
-            onClick={() => setShowMobileMenu(false)}
-            className="text-white hover:text-gray-300 transition-colors"
-          >
-            <h1 className="text-xl font-bold text-gray-900">TestMate AI</h1>
-          </a> */}
-
-          {/* </div> */}
+        </a>
       </div>
 
       {/* Menu */}
@@ -59,7 +47,7 @@ export default function ChatHeader({ setShowSidebar, showMobileMenu, setShowMobi
         <button className="p-2 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors md:hidden"
           onClick={() => setShowMobileMenu(!showMobileMenu)}>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
 
