@@ -164,6 +164,7 @@ export default function ProfilePage() {
                     showMobileMenu={showMobileMenu}
                     setShowMobileMenu={setShowMobileMenu}
                     handleLogout={handleLogout}
+                    isOnChatPage={false}
                 />
                 <main className="flex-1 p-4 min-h-0 pb-0">
                     <div className="flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl min-h-0 h-[calc(100%-0.80rem)]">
