@@ -128,27 +128,58 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
     <div className="border-t border-gray-200 bg-white">
       <div className="max-w-4xl mx-auto px-4 py-4">
         {/* Options Row */}
-        <div className="mb-4 overflow-x-auto">
-          <div className="flex gap-3 min-w-max">
-            <div className="grid grid-cols-2 gap-2 min-w-max">
-              <button
-                onClick={() => setShowAcceptanceModal(true)}
-                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium whitespace-nowrap"
-              >
-                Acceptance Criteria
-              </button>
-              <button
-                onClick={() => setShowTestCharterModal(true)}
-                className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium whitespace-nowrap"
-              >
-                Test Charter
-              </button>
-              <button
-                onClick={() => setShowGherkinModal(true)}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium whitespace-nowrap"
-              >
-                Generate Gherkin
-              </button>
+        <div className="mb-4">
+          {/* Desktop: Original layout */}
+          <div className="hidden md:block">
+            <div className="overflow-x-auto">
+              <div className="flex gap-3 min-w-max">
+                <div className="grid grid-cols-3 gap-2 min-w-max">
+                  <button
+                    onClick={() => setShowAcceptanceModal(true)}
+                    className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium whitespace-nowrap"
+                  >
+                    Acceptance Criteria
+                  </button>
+                  <button
+                    onClick={() => setShowTestCharterModal(true)}
+                    className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium whitespace-nowrap"
+                  >
+                    Test Charter
+                  </button>
+                  <button
+                    onClick={() => setShowGherkinModal(true)}
+                    className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium whitespace-nowrap"
+                  >
+                    Generate Gherkin
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: Your provided code */}
+          <div className="md:hidden">
+          <div className="mb-4 flex justify-center w-full">
+              <div className="flex gap-3 max-w-[350px] min-w-[200px] overflow-x-auto">
+                <button
+                  onClick={() => setShowAcceptanceModal(true)}
+                  className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Acceptance Criteria
+                </button>
+                <button
+                  onClick={() => setShowTestCharterModal(true)}
+                  className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Test Charter
+                </button>
+                <button
+                  onClick={() => setShowGherkinModal(true)}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Generate Gherkin
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -178,7 +209,7 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
                 </svg>
               </button>
             </div>
-            
+
             <div className="flex gap-3">
               <input
                 type="text"
@@ -282,7 +313,7 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
         onClose={() => setShowAcceptanceModal(false)}
         onConfirm={handleAcceptanceCriteriaConfirm}
       />
-      
+
       <TestCharterModal
         isOpen={showTestCharterModal}
         onClose={() => setShowTestCharterModal(false)}
