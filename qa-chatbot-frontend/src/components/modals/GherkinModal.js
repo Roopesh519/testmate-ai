@@ -13,31 +13,17 @@ const GherkinModal = ({ isOpen, onClose, onConfirm }) => {
 
     setError('');
 
-    const prompt = `Generate Gherkin scenarios based on the following acceptance criteria. Follow the standard Given-When-Then format and create comprehensive test scenarios covering both happy and unhappy paths.
+    const prompt = `Act as a Gherkin test case generator.
 
-**Structure your response as follows:**
+Given the following feature description and its Conditions of Satisfaction (Acceptance Criteria), generate Gherkin test scenarios using the following format:
 
-**Feature:** [Feature name based on the acceptance criteria]
-
-**Scenario 1: [Happy Path Scenario Name]**
-Given [precondition]
-When [action]
-Then [expected result]
-
-**Scenario 2: [Another Happy Path if applicable]**
-Given [precondition]
-When [action]
-Then [expected result]
-
-**Scenario 3: [Unhappy Path Scenario Name]**
-Given [precondition]
-When [action]
-Then [expected result/error handling]
-
-**Scenario 4: [Another Unhappy Path if applicable]**
-Given [precondition]
-When [action]
-Then [expected result/error handling]
+- Feature: [Title and User Story]
+- Acceptance Criteria (should be implemented as rules and examples)
+- Tag important test types (e.g., @logout, @validation, @pro-only) if applicable.
+- Use "Rule" and "Example" where logic needs branching (like feature gating, error handling, or limits).
+- Use clean, concise step definitions with 'Given', 'When', 'Then', and 'And'.
+- Reuse copy/text/messages exactly as in the COS wherever applicable.
+- Ensure character limit validations, permissions, and rich text editing options are covered.
 
 ---
 
