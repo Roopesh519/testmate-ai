@@ -264,7 +264,7 @@ export default function Chat() {
         {/* Error Banner */}
         {error && (
           <div className="bg-red-500 bg-opacity-90 text-white p-3 flex justify-between items-center">
-            <span>{error}</span>
+            <span>{error} Try logging in again</span>
             <button 
               onClick={handleRetry}
               className="bg-red-700 hover:bg-red-600 px-3 py-1 rounded text-sm"

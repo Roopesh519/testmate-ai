@@ -70,6 +70,8 @@ router.post('/login', async (req, res) => {
     user.tokenIssuedAt = new Date();
     await user.save();
 
+    console.log('✅ User logged in successfully:', user._id);
+
     res.json({
       token: accessToken,
       refreshToken: refreshToken,
@@ -158,7 +160,9 @@ router.post('/logout', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (user) {
-      await user.clearRefreshToken();
+      // Clear the refresh token from database
+      user.refreshToken = null;
+      await user.save();
       console.log('✅ User logged out successfully:', user._id);
     }
     res.json({ message: 'Logged out successfully' });
