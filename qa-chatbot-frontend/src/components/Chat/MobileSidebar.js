@@ -177,7 +177,7 @@ export default function MobileSidebar({
                           <div className="flex items-center gap-1 opacity-100 transition-opacity">
                             <button
                               onClick={(e) => handleStartEdit(conv, e)}
-                              className="text-gray-400 hover:text-white text-xs"
+                              className="text-gray-400 hover:text-white text-xs transition duration-200 ease-in-out hover:bg-gray-700 hover:rounded px-2 py-1"
                               title="Edit title"
                             >
                               <img src="compose.png" alt="Edit" className="w-4 h-4" />

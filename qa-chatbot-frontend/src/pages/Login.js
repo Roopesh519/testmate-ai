@@ -32,14 +32,29 @@ export default function Login() {
       );
 
       const data = await res.json();
-      const token = data.token;
-      if (token) {
+
+      // Check if login was successful
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        return;
+      }
+
+      // ✅ FIXED: Store both tokens and user data
+      const { token, refreshToken, user } = data;
+      
+      if (token && refreshToken) {
         localStorage.setItem('token', token);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        console.log('✅ Login successful - tokens stored');
         window.location.href = '/chat';
       } else {
-        setError('No token received from server.');
+        setError('Invalid response from server - missing tokens.');
+        console.error('Login response missing tokens:', data);
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.message || 'Login failed');
     } finally {
       setLoading(false);

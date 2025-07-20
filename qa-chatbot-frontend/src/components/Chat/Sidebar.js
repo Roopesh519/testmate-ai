@@ -122,14 +122,14 @@ export default function Sidebar({ conversations, onSelectConversation, onNewChat
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={(e) => handleStartEdit(conv, e)}
-                              className="text-gray-400 hover:text-white text-xs"
+                              className="text-gray-400 hover:text-white text-xs transition duration-200 ease-in-out hover:bg-gray-700 hover:rounded px-2 py-1"
                               title="Edit title"
                             >
                               <img src="compose.png" alt="Edit" className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => handleDeleteClick(conv, e)}
-                              className="text-gray-400 hover:text-red-400 text-xs ml-1"
+                              className="text-gray-400 hover:text-white text-xs transition duration-200 ease-in-out hover:bg-gray-700 hover:rounded px-2 py-1"
                               title="Delete conversation"
                             >
                               <img src="delete.png" alt="Delete" className="w-4 h-4" />
