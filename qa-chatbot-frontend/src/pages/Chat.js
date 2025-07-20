@@ -73,6 +73,39 @@ export default function Chat() {
       );
     } catch (error) {
       console.error('Error updating conversation title:', error);
+      throw error; // Re-throw to let the sidebar handle the error
+    }
+  };
+
+  // Delete conversation
+  const handleDeleteConversation = async (conversationId) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to delete conversation');
+
+      // Remove conversation from state
+      setConversations(prev => prev.filter(conv => conv._id !== conversationId));
+
+      // If the deleted conversation was the active one, clear the chat
+      if (activeConversationId === conversationId) {
+        setMessages([]);
+        setActiveConversationId(null);
+        
+        // Auto-load the first remaining conversation if any exist
+        const remainingConversations = conversations.filter(conv => conv._id !== conversationId);
+        if (remainingConversations.length > 0) {
+          loadConversation(remainingConversations[0]._id);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      throw error; // Re-throw to let the sidebar handle the error
     }
   };
 
@@ -179,6 +212,7 @@ export default function Chat() {
         onSelectConversation={loadConversation}
         onNewChat={handleNewChat}
         onUpdateConversationTitle={handleUpdateConversationTitle}
+        onDeleteConversation={handleDeleteConversation}
       />
       <MobileSidebar
         conversations={conversations}
@@ -187,6 +221,7 @@ export default function Chat() {
         onSelectConversation={loadConversation}
         onNewChat={handleNewChat}
         onUpdateConversationTitle={handleUpdateConversationTitle}
+        onDeleteConversation={handleDeleteConversation}
       />
       <div className="flex flex-col flex-1 relative min-h-0">
         <ChatHeader

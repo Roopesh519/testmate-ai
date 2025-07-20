@@ -6,11 +6,13 @@ export default function MobileSidebar({
   setShowSidebar,
   onSelectConversation,
   onNewChat,
-  onUpdateConversationTitle
+  onUpdateConversationTitle,
+  onDeleteConversation
 }) {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const handleSelect = (id) => {
     if (!editingId) {
@@ -50,9 +52,30 @@ export default function MobileSidebar({
     }
   };
 
+  const handleDeleteClick = (conv, e) => {
+    e.stopPropagation();
+    setDeletingId(conv._id);
+  };
+
+  const handleConfirmDelete = async (convId) => {
+    try {
+      await onDeleteConversation(convId);
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+    setDeletingId(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeletingId(null);
+  };
+
   const handleCloseSidebar = () => {
     if (editingId) {
       handleCancelEdit();
+    }
+    if (deletingId) {
+      handleCancelDelete();
     }
     setShowSidebar(false);
   };
@@ -84,7 +107,7 @@ export default function MobileSidebar({
               ×
             </button>
           </div>
-          
+
           <div className="p-4 border-b border-white border-opacity-20">
             <div className="flex justify-between items-center mb-3">
               <button
@@ -151,13 +174,22 @@ export default function MobileSidebar({
                       ) : (
                         <div className="flex items-center justify-between">
                           <div className="text-sm text-blue-200 truncate pr-2">{conv.title}</div>
-                          <button
-                            onClick={(e) => handleStartEdit(conv, e)}
-                            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-gray-400 hover:text-white text-xs transition-opacity"
-                            title="Edit title"
-                          >
-                            <img src="compose.png" alt="Edit" className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1 opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => handleStartEdit(conv, e)}
+                              className="text-gray-400 hover:text-white text-xs"
+                              title="Edit title"
+                            >
+                              <img src="compose.png" alt="Edit" className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteClick(conv, e)}
+                              className="text-gray-400 hover:text-red-400 text-xs ml-1"
+                              title="Delete conversation"
+                            >
+                              <img src="delete.png" alt="Delete" className="w-4 h-4" /> 
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -168,6 +200,32 @@ export default function MobileSidebar({
           </div>
         </div>
       </aside>
+
+      {/* Delete Confirmation Modal */}
+      {deletingId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md mx-4 border border-gray-600">
+            <h3 className="text-lg font-semibold text-white mb-4">Delete Conversation</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete this conversation? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleConfirmDelete(deletingId)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
