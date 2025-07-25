@@ -168,15 +168,15 @@ export default function AboutUsPage() {
 
                                 {/* Technology Stack */}
                                 <div className="mt-8 text-center">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Built with Modern Technologies</h3>
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Built with Technologies</h3>
                                     <div className="flex flex-wrap justify-center gap-3 text-sm">
                                         <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">React</span>
                                         <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">Node.js</span>
                                         <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">AI/ML</span>
                                         <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">MongoDB</span>
-                                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">Selenium</span>
-                                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">Cypress</span>
-                                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">Jest</span>
+                                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">together.ai</span>
+                                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">Deepseek</span>
+                                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">Spline</span>
                                     </div>
                                 </div>
                             </div>
