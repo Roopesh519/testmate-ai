@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import ChatHeader from '../components/Chat/ChatHeader';
 import ChatMessages from '../components/Chat/ChatMessages';
 import ChatInput from '../components/Chat/ChatInput';
@@ -13,28 +13,23 @@ export default function Chat() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
+  const [isPageLoaded, setIsPageLoaded] = useState(false);
 
   const chatRef = useRef();
   const token = localStorage.getItem('token');
 
-  // Fetch list of all conversations
   const fetchConversations = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/chat/conversations');
       setConversations(res.data.conversations);
     } catch (err) {
       console.error('Failed to fetch conversations:', err);
     }
   };
 
-  // Load messages of a specific conversation
   const loadConversation = async (conversationId) => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get(`/chat/conversations/${conversationId}`);
       setMessages(res.data.messages);
       setActiveConversationId(conversationId);
     } catch (err) {
@@ -43,118 +38,102 @@ export default function Chat() {
   };
 
   const loadingMessages = [
-    "Thinking...",
-    "Typing your answer...",
-    "Gathering info...",
-    "Consulting the data hive...",
-    "One sec, almost there..."
+    'Thinking...',
+    'Typing your answer...',
+    'Gathering info...',
+    'Consulting the data hive...',
+    'One sec, almost there...',
   ];
 
   const handleUpdateConversationTitle = async (conversationId, newTitle) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // if using auth tokens
-        },
-        body: JSON.stringify({ title: newTitle })
+      await api.patch(`/chat/conversations/${conversationId}`, {
+        title: newTitle,
       });
 
-      if (!response.ok) throw new Error('Failed to update title');
-
-      // Update your conversations state
-      setConversations(prev =>
-        prev.map(conv =>
-          conv._id === conversationId
-            ? { ...conv, title: newTitle }
-            : conv
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv._id === conversationId ? { ...conv, title: newTitle } : conv
         )
       );
     } catch (error) {
       console.error('Error updating conversation title:', error);
-      throw error; // Re-throw to let the sidebar handle the error
+      throw error;
     }
   };
 
-  // Delete conversation
   const handleDeleteConversation = async (conversationId) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/chat/conversations/${conversationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      await api.delete(`/chat/conversations/${conversationId}`);
 
-      if (!response.ok) throw new Error('Failed to delete conversation');
+      setConversations((prev) =>
+        prev.filter((conv) => conv._id !== conversationId)
+      );
 
-      // Remove conversation from state
-      setConversations(prev => prev.filter(conv => conv._id !== conversationId));
-
-      // If the deleted conversation was the active one, clear the chat
       if (activeConversationId === conversationId) {
         setMessages([]);
         setActiveConversationId(null);
-        
-        // Auto-load the first remaining conversation if any exist
-        const remainingConversations = conversations.filter(conv => conv._id !== conversationId);
+
+        const remainingConversations = conversations.filter(
+          (conv) => conv._id !== conversationId
+        );
         if (remainingConversations.length > 0) {
           loadConversation(remainingConversations[0]._id);
         }
       }
     } catch (error) {
       console.error('Error deleting conversation:', error);
-      throw error; // Re-throw to let the sidebar handle the error
+      throw error;
     }
   };
 
-  // Send message
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const randomLoadingMessage = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
+    const randomLoadingMessage =
+      loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
     const newMessage = { prompt: input, response: randomLoadingMessage };
 
-    // Show loading message in UI
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
     setInput('');
 
-    // Build conversation history
-    const conversationHistory = messages.flatMap(msg => ([
+    const conversationHistory = messages.flatMap((msg) => [
       { role: 'user', content: msg.prompt },
-      { role: 'assistant', content: msg.response }
-    ]));
+      { role: 'assistant', content: msg.response },
+    ]);
 
-    // Add current user message at the end
     conversationHistory.push({ role: 'user', content: input });
 
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/chat`, {
-        messages: conversationHistory, // <-- IMPORTANT FIX HERE
-        conversationId: activeConversationId
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await api.post('/chat', {
+        messages: conversationHistory,
+        conversationId: activeConversationId,
       });
 
       const reply = res.data.reply;
 
-      // Save conversation ID if it's a new one
       if (!activeConversationId && res.data.conversationId) {
         setActiveConversationId(res.data.conversationId);
-        fetchConversations(); // Refresh UI
+        fetchConversations();
       }
 
-      // Replace loading with actual reply
-      setMessages(prev => [...prev.slice(0, -1), { prompt: input, response: reply }]);
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        { prompt: input, response: reply },
+      ]);
     } catch (err) {
       alert('Error sending message');
       console.error(err);
     }
   };
 
-  // Initial effect to check auth and fetch conversations
   useEffect(() => {
+    // Remove any existing page transition overlay
+    const overlay = document.getElementById('page-transition-overlay');
+    if (overlay) {
+      overlay.remove();
+    }
+
     if (!token) {
       alert('You must be logged in to use the chat.');
       window.location.href = '/login';
@@ -169,22 +148,23 @@ export default function Chat() {
 
     setViewportHeight();
     window.addEventListener('resize', setViewportHeight);
+
+    // Trigger page load animation
+    setTimeout(() => setIsPageLoaded(true), 100);
+
     return () => window.removeEventListener('resize', setViewportHeight);
   }, []);
 
-  // Auto-load first conversation if none is selected
   useEffect(() => {
     if (conversations.length > 0 && !activeConversationId) {
       loadConversation(conversations[0]._id);
     }
   }, [conversations]);
 
-  // Prevent background scroll when sidebar is open
   useEffect(() => {
-    document.body.style.overflow = (showSidebar || showMobileMenu) ? 'hidden' : '';
+    document.body.style.overflow = showSidebar || showMobileMenu ? 'hidden' : '';
   }, [showSidebar, showMobileMenu]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     chatRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -206,7 +186,12 @@ export default function Chat() {
   };
 
   return (
-    <div style={{ height: 'calc(var(--vh) * 100)' }} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex">
+    <div
+      style={{ height: 'calc(var(--vh) * 100)' }}
+      className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex transition-all duration-500 ease-out ${
+        isPageLoaded ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
       <Sidebar
         conversations={conversations}
         onSelectConversation={loadConversation}
@@ -232,15 +217,17 @@ export default function Chat() {
           isOnChatPage={true}
         />
         <main className="flex-1 p-1 min-h-0 pb-0">
-          <div className="flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 shadow-xl min-h-0 h-[calc(100%-0.80rem)]">
+          <div className={`flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 shadow-xl min-h-0 h-[calc(100%-0.80rem)] transition-all duration-700 ease-out ${
+            isPageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
             <ChatMessages messages={messages} chatRef={chatRef} />
             <ChatInput
               input={input}
               setInput={setInput}
               sendMessage={sendMessage}
-              token={token} // ✅ Add this
-              activeConversationId={activeConversationId} // ✅ Add this
-              setMessages={setMessages} // ✅ Add this
+              token={token}
+              activeConversationId={activeConversationId}
+              setMessages={setMessages}
             />
           </div>
         </main>
