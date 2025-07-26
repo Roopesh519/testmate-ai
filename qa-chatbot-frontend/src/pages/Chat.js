@@ -14,8 +14,11 @@ export default function Chat() {
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
 
   const chatRef = useRef();
+  const mainContainerRef = useRef();
+  const messagesContainerRef = useRef();
   const token = localStorage.getItem('token');
 
   const fetchConversations = async () => {
@@ -127,6 +130,18 @@ export default function Chat() {
     }
   };
 
+  // Enhanced viewport height calculation for mobile
+  const updateViewportHeight = () => {
+    // Use window.visualViewport for better mobile support
+    const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    setViewportHeight(height);
+    
+    // Set CSS custom property
+    const vh = height * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    document.documentElement.style.setProperty('--real-vh', `${height}px`);
+  };
+
   useEffect(() => {
     // Remove any existing page transition overlay
     const overlay = document.getElementById('page-transition-overlay');
@@ -139,20 +154,37 @@ export default function Chat() {
       window.location.href = '/login';
     }
 
+    // Add chat-specific CSS class to body
+    document.body.classList.add('chat-page');
+
     fetchConversations();
 
-    const setViewportHeight = () => {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-
-    setViewportHeight();
-    window.addEventListener('resize', setViewportHeight);
+    // Enhanced viewport height handling
+    updateViewportHeight();
+    
+    // Listen for viewport changes (mobile keyboard, etc.)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateViewportHeight);
+    }
+    
+    window.addEventListener('resize', updateViewportHeight);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateViewportHeight, 100);
+    });
 
     // Trigger page load animation
     setTimeout(() => setIsPageLoaded(true), 100);
 
-    return () => window.removeEventListener('resize', setViewportHeight);
+    return () => {
+      // Clean up chat-specific styles
+      document.body.classList.remove('chat-page');
+      
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updateViewportHeight);
+      }
+      window.removeEventListener('resize', updateViewportHeight);
+      window.removeEventListener('orientationchange', updateViewportHeight);
+    };
   }, []);
 
   useEffect(() => {
@@ -162,11 +194,27 @@ export default function Chat() {
   }, [conversations]);
 
   useEffect(() => {
-    document.body.style.overflow = showSidebar || showMobileMenu ? 'hidden' : '';
+    // Only prevent body scrolling when sidebars are open, not for main chat
+    if (showSidebar || showMobileMenu) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = '0';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    }
   }, [showSidebar, showMobileMenu]);
 
   useEffect(() => {
-    chatRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Smooth scroll to bottom when new messages arrive
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleLogout = () => {
@@ -187,10 +235,20 @@ export default function Chat() {
 
   return (
     <div
-      style={{ height: 'calc(var(--vh) * 100)' }}
-      className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex transition-all duration-500 ease-out ${
+      ref={mainContainerRef}
+      className={`chat-main-container bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex transition-all duration-500 ease-out ${
         isPageLoaded ? 'opacity-100' : 'opacity-0'
       }`}
+      style={{ 
+        height: '100vh',
+        maxHeight: '100vh',
+        width: '100vw',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+      }}
     >
       <Sidebar
         conversations={conversations}
@@ -208,27 +266,50 @@ export default function Chat() {
         onUpdateConversationTitle={handleUpdateConversationTitle}
         onDeleteConversation={handleDeleteConversation}
       />
-      <div className="flex flex-col flex-1 relative min-h-0">
+      
+      <div className="flex flex-col flex-1 h-full">
         <ChatHeader
           setShowSidebar={setShowSidebar}
           showMobileMenu={showMobileMenu}
           setShowMobileMenu={setShowMobileMenu}
           handleLogout={handleLogout}
           isOnChatPage={true}
+          className="flex-shrink-0"
         />
-        <main className="flex-1 p-1 min-h-0 pb-0">
-          <div className={`flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 shadow-xl min-h-0 h-[calc(100%-0.80rem)] transition-all duration-700 ease-out ${
-            isPageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            <ChatMessages messages={messages} chatRef={chatRef} />
-            <ChatInput
-              input={input}
-              setInput={setInput}
-              sendMessage={sendMessage}
-              token={token}
-              activeConversationId={activeConversationId}
-              setMessages={setMessages}
-            />
+        
+        <main className="flex-1 p-1 min-h-0">
+          <div 
+            className={`flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 shadow-xl transition-all duration-700 ease-out h-full ${
+              isPageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            {/* Messages Container - Scrollable */}
+            <div 
+              ref={messagesContainerRef}
+              className="messages-container flex-1 overflow-y-auto overflow-x-hidden"
+              style={{
+                minHeight: 0,
+                scrollBehavior: 'smooth',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
+              <ChatMessages 
+                messages={messages} 
+                chatRef={chatRef}
+              />
+            </div>
+            
+            {/* Input Container - Fixed at bottom */}
+            <div className="flex-shrink-0 border-t border-gray-200">
+              <ChatInput
+                input={input}
+                setInput={setInput}
+                sendMessage={sendMessage}
+                token={token}
+                activeConversationId={activeConversationId}
+                setMessages={setMessages}
+              />
+            </div>
           </div>
         </main>
       </div>
