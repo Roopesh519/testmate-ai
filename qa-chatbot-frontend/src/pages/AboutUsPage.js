@@ -39,7 +39,7 @@ export default function AboutUsPage() {
                 />
                 <main className="flex-1 p-4 min-h-0 pb-0">
                     <div className="flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl min-h-0 h-[calc(100%-0.80rem)]">
-                        <div className="flex-1 overflow-y-auto">
+                        <div className="flex-1 overflow-y-auto settings-scrollbar">
                             <div className="max-w-6xl mx-auto p-6">
                                 <h1 className="text-3xl font-bold mb-8 text-gray-800 text-center">About TestMate AI</h1>
 

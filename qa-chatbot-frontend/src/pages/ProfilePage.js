@@ -160,7 +160,7 @@ export default function ProfilePage() {
                     <div className={`flex flex-col bg-white bg-opacity-90 backdrop-blur-md border border-white border-opacity-20 rounded-xl shadow-xl min-h-0 h-[calc(100%-0.80rem)] transition-all duration-700 ease-out ${
                         isPageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                     }`}>
-                        <div className="flex-1 overflow-y-auto">
+                        <div className="flex-1 overflow-y-auto settings-scrollbar">
                             <div className="max-w-4xl mx-auto p-6">
                                 {/* Edit Toggle */}
                                 <div className={`flex justify-between items-center mb-6 transition-all duration-500 delay-100 ease-out ${

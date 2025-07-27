@@ -79,7 +79,7 @@ export default function Sidebar({ conversations, onSelectConversation, onNewChat
             />
           </div>
 
-          <div className="flex-1 p-4 overflow-y-auto">
+          <div className="flex-1 p-4 overflow-y-auto settings-scrollbar">
             {filteredConversations.length === 0 ? (
               <p className="text-gray-400 text-sm">No conversations found</p>
             ) : (

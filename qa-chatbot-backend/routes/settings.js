@@ -75,7 +75,7 @@ router.put('/api-key', authMiddleware, async (req, res) => {
 
         // Test the API key by making a simple request
         try {
-            const testResponse = await fetch('https://api.together.xyz/v1/models', {
+            const testResponse = await fetch('https://api.together.ai/v1/models', {
                 headers: {
                     'Authorization': `Bearer ${trimmedKey}`,
                     'Content-Type': 'application/json'

@@ -71,7 +71,7 @@ const ApiKeyModal = ({ isOpen, onClose, onNavigateToSettings }) => {
             
             <div className="text-center">
               <a
-                href="https://api.together.xyz"
+                href="https://api.together.ai/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center space-x-1 text-sm text-indigo-600 hover:text-indigo-700 transition-colors"
