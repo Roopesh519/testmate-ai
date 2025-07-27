@@ -8,18 +8,27 @@ import fs from 'fs';
 import path from 'path';
 // import pdfParse from 'pdf-parse';
 import Tesseract from 'tesseract.js';
+import { getUserApiKey } from './settings.js';
 
 const router = express.Router();
 
 let together = null;
-function getTogetherClient() {
-  if (!together) {
-    if (!process.env.TOGETHER_API_KEY) {
-      console.warn('⚠️ TOGETHER_API_KEY is missing from env!');
-    }
-    together = new Together(); // Will pull from process.env.TOGETHER_API_KEY
-    console.log('🧠 Together client initialized');
+function getTogetherClient(apiKey = null) {
+  // If user has their own API key, create a new instance with it
+  if (apiKey) {
+    return new Together({
+      apiKey: apiKey
+    });
   }
+  
+  // Otherwise use the default system client
+  // if (!together) {
+  //   if (!process.env.TOGETHER_API_KEY) {
+  //     console.warn('⚠️ TOGETHER_API_KEY is missing from env!');
+  //   }
+  //   together = new Together(); // Will pull from process.env.TOGETHER_API_KEY
+  //   console.log('🧠 Together client initialized');
+  // }
   return together;
 }
 
@@ -39,7 +48,9 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 
   try {
-    const client = getTogetherClient();
+    // Get user's API key if they have one
+    const userApiKey = await getUserApiKey(userId);
+    const client = getTogetherClient(userApiKey);
 
     // Add a system prompt at the top, always
     const messagesWithSystem = [
@@ -79,6 +90,22 @@ router.post('/', authMiddleware, async (req, res) => {
     res.json({ reply, conversationId: conversation._id });
   } catch (err) {
     console.error('❌ Chat error:', err.message);
+    
+    // Handle API key related errors
+    if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+      return res.status(401).json({ 
+        error: 'Invalid API key. Please check your Together.ai API key in settings.',
+        code: 'INVALID_API_KEY'
+      });
+    }
+    
+    if (err.message.includes('quota') || err.message.includes('limit')) {
+      return res.status(429).json({ 
+        error: 'API quota exceeded. Please check your Together.ai account.',
+        code: 'QUOTA_EXCEEDED'
+      });
+    }
+    
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -195,8 +222,10 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
       return res.status(400).json({ error: 'No text found in file' });
     }
 
-    // 🤖 Ask Together AI about the extracted content
-    const client = getTogetherClient();
+    // 🤖 Ask Together AI about the extracted content using user's API key if available
+    const userApiKey = await getUserApiKey(userId);
+    const client = getTogetherClient(userApiKey);
+    
     const messages = [
       { role: 'system', content: 'You are a helpful assistant. Answer based on the file content provided.' },
       { role: 'user', content: `Here is the content of the uploaded file:\n\n${extractedText}` }
@@ -229,6 +258,15 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
     res.json({ reply, fileName: file.originalname });
   } catch (err) {
     console.error('❌ File processing error:', err.message || err);
+    
+    // Handle API key related errors for file upload too
+    if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+      return res.status(401).json({ 
+        error: 'Invalid API key. Please check your Together.ai API key in settings.',
+        code: 'INVALID_API_KEY'
+      });
+    }
+    
     res.status(500).json({ error: 'Failed to process uploaded file' });
   }
 });

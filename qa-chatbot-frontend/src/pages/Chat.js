@@ -5,6 +5,7 @@ import ChatMessages from '../components/Chat/ChatMessages';
 import ChatInput from '../components/Chat/ChatInput';
 import Sidebar from '../components/Chat/Sidebar';
 import MobileSidebar from '../components/Chat/MobileSidebar';
+import ApiKeyModal from '../components/modals/ApiKeyModal'; // Import the modal
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -15,11 +16,26 @@ export default function Chat() {
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(null); // null = loading, true/false = result
 
   const chatRef = useRef();
   const mainContainerRef = useRef();
   const messagesContainerRef = useRef();
   const token = localStorage.getItem('token');
+
+  const checkApiKeyStatus = async () => {
+    try {
+      const res = await api.get('/settings');
+      setHasApiKey(res.data.hasApiKey);
+      return res.data.hasApiKey;
+    } catch (err) {
+      console.error('Failed to check API key status:', err);
+      // Assume no API key on error
+      setHasApiKey(false);
+      return false;
+    }
+  };
 
   const fetchConversations = async () => {
     try {
@@ -93,11 +109,20 @@ export default function Chat() {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
+    // Check if user has API key before sending message
+    const hasKey = hasApiKey !== null ? hasApiKey : await checkApiKeyStatus();
+    
+    if (!hasKey) {
+      setShowApiKeyModal(true);
+      return;
+    }
+
     const randomLoadingMessage =
       loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
     const newMessage = { prompt: input, response: randomLoadingMessage };
 
     setMessages((prev) => [...prev, newMessage]);
+    const currentInput = input; // Store current input
     setInput('');
 
     const conversationHistory = messages.flatMap((msg) => [
@@ -105,7 +130,7 @@ export default function Chat() {
       { role: 'assistant', content: msg.response },
     ]);
 
-    conversationHistory.push({ role: 'user', content: input });
+    conversationHistory.push({ role: 'user', content: currentInput });
 
     try {
       const res = await api.post('/chat', {
@@ -122,11 +147,39 @@ export default function Chat() {
 
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { prompt: input, response: reply },
+        { prompt: currentInput, response: reply },
       ]);
     } catch (err) {
-      alert('Error sending message');
-      console.error(err);
+      console.error('Error sending message:', err);
+      
+      // Remove the loading message since we got an error
+      setMessages((prev) => prev.slice(0, -1));
+      setInput(currentInput); // Restore the input
+
+      // Check if the error might be API key related after all
+      if (err.response) {
+        const errorMessage = err.response.data?.error || '';
+        const statusCode = err.response.status;
+        
+        // Double-check API key status if we get auth errors
+        if (
+          statusCode === 401 || 
+          statusCode === 403 ||
+          errorMessage.toLowerCase().includes('api key') ||
+          errorMessage.toLowerCase().includes('unauthorized') ||
+          errorMessage.toLowerCase().includes('authentication')
+        ) {
+          // Re-check API key status
+          const currentHasKey = await checkApiKeyStatus();
+          if (!currentHasKey) {
+            setShowApiKeyModal(true);
+            return;
+          }
+        }
+      }
+      
+      // For other errors, show generic message
+      alert('Error sending message. Please try again.');
     }
   };
 
@@ -140,6 +193,17 @@ export default function Chat() {
     const vh = height * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
     document.documentElement.style.setProperty('--real-vh', `${height}px`);
+  };
+
+  const handleNavigateToSettings = () => {
+    setShowApiKeyModal(false);
+    window.location.href = '/settings';
+  };
+
+  const handleModalClose = () => {
+    setShowApiKeyModal(false);
+    // Re-check API key status when modal is closed
+    checkApiKeyStatus();
   };
 
   useEffect(() => {
@@ -157,6 +221,8 @@ export default function Chat() {
     // Add chat-specific CSS class to body
     document.body.classList.add('chat-page');
 
+    // Check API key status and fetch conversations
+    checkApiKeyStatus();
     fetchConversations();
 
     // Enhanced viewport height handling
@@ -250,6 +316,13 @@ export default function Chat() {
         bottom: 0
       }}
     >
+      {/* API Key Modal */}
+      <ApiKeyModal
+        isOpen={showApiKeyModal}
+        onClose={handleModalClose}
+        onNavigateToSettings={handleNavigateToSettings}
+      />
+
       <Sidebar
         conversations={conversations}
         onSelectConversation={loadConversation}
@@ -293,6 +366,25 @@ export default function Chat() {
                 WebkitOverflowScrolling: 'touch'
               }}
             >
+              {/* API Key Warning Banner */}
+              {hasApiKey === false && (
+                <div className="mx-4 mt-4 mb-2 p-3 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <div className="w-4 h-4 bg-orange-400 rounded-full flex-shrink-0"></div>
+                    <span className="text-orange-800">
+                      <strong>API Key Required:</strong> Configure your Together.ai API key in{' '}
+                      <button 
+                        onClick={() => setShowApiKeyModal(true)}
+                        className="underline hover:no-underline font-medium"
+                      >
+                        settings
+                      </button>{' '}
+                      to start chatting.
+                    </span>
+                  </div>
+                </div>
+              )}
+              
               <ChatMessages 
                 messages={messages} 
                 chatRef={chatRef}

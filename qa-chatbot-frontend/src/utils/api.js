@@ -18,9 +18,9 @@ instance.interceptors.response.use(
   response => response,
   error => {
     if (error.response?.data?.code === 'TOKEN_EXPIRED') {
-      alert('Your session has expired. Please log in again.');
-      localStorage.clear();
-      window.location.href = '/login';
+      // Dispatch custom event for the modal to handle
+      const sessionExpiredEvent = new CustomEvent('sessionExpired');
+      window.dispatchEvent(sessionExpiredEvent);
     }
     return Promise.reject(error);
   }
