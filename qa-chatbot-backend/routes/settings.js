@@ -3,31 +3,73 @@ import express from 'express';
 import User from '../models/User.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import crypto from 'crypto';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const router = express.Router();
 
 // Encryption configuration
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32); // 32 bytes key
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 const ALGORITHM = 'aes-256-cbc';
 
-// Encrypt function
-function encrypt(text) {
-    const iv = crypto.randomBytes(16); // 16 bytes IV
-    const cipher = crypto.createCipher(ALGORITHM, ENCRYPTION_KEY);
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    return iv.toString('hex') + ':' + encrypted;
+// Create a consistent 32-byte key
+function getEncryptionKey() {
+    return crypto.createHash('sha256').update(ENCRYPTION_KEY).digest();
 }
 
-// Decrypt function
+// Fixed encrypt function
+function encrypt(text) {
+    if (!text) return null;
+    
+    try {
+        const key = getEncryptionKey();
+        const iv = crypto.randomBytes(16); // 16 bytes IV
+        const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+        
+        let encrypted = cipher.update(text, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        // Return IV + encrypted data
+        return iv.toString('hex') + ':' + encrypted;
+    } catch (error) {
+        console.error('❌ Encryption error:', error);
+        return null;
+    }
+}
+
+// Fixed decrypt function
 function decrypt(encryptedText) {
-    const textParts = encryptedText.split(':');
-    const iv = Buffer.from(textParts.shift(), 'hex');
-    const encrypted = textParts.join(':');
-    const decipher = crypto.createDecipher(ALGORITHM, ENCRYPTION_KEY);
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+    if (!encryptedText) return null;
+    
+    try {
+        const key = getEncryptionKey();
+        
+        // Handle both old and new formats
+        if (encryptedText.includes(':')) {
+            // New format with IV
+            const textParts = encryptedText.split(':');
+            const iv = Buffer.from(textParts[0], 'hex');
+            const encrypted = textParts[1];
+            
+            const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+            let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+            decrypted += decipher.final('utf8');
+            return decrypted;
+        } else {
+            // Legacy format without IV - use a fixed IV for backward compatibility
+            // This handles existing encrypted data in your database
+            const iv = Buffer.alloc(16, 0); // Fixed IV filled with zeros
+            const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+            
+            let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+            decrypted += decipher.final('utf8');
+            return decrypted;
+        }
+    } catch (error) {
+        console.error('❌ Decryption error:', error);
+        console.error('❌ Encrypted text:', encryptedText);
+        return null;
+    }
 }
 
 // GET user settings
@@ -93,6 +135,10 @@ router.put('/api-key', authMiddleware, async (req, res) => {
         // Encrypt and store the API key
         const encryptedApiKey = encrypt(trimmedKey);
         
+        if (!encryptedApiKey) {
+            return res.status(500).json({ error: 'Failed to encrypt API key' });
+        }
+        
         await User.findByIdAndUpdate(userId, {
             togetherApiKey: encryptedApiKey
         });
@@ -123,10 +169,23 @@ router.delete('/api-key', authMiddleware, async (req, res) => {
 // Helper function to get user's API key (for use in other routes)
 export async function getUserApiKey(userId) {
     try {
+        console.log('🔍 Getting API key for user:', userId);
         const user = await User.findById(userId).select('togetherApiKey');
+        
         if (user && user.togetherApiKey) {
-            return decrypt(user.togetherApiKey);
+            console.log('🔑 Found encrypted API key, attempting to decrypt...');
+            const decryptedKey = decrypt(user.togetherApiKey);
+            
+            if (decryptedKey) {
+                console.log('✅ Successfully decrypted API key');
+                return decryptedKey;
+            } else {
+                console.log('❌ Failed to decrypt API key');
+                return null;
+            }
         }
+        
+        console.log('ℹ️ No API key found for user, using system default');
         return null; // Use system default
     } catch (error) {
         console.error('❌ Error getting user API key:', error);
