@@ -42,8 +42,11 @@ export default function ChatHeader({
 
   // Smooth navigation function
   const handleNavigation = (path, callback) => {
+    // Get current path to check if we're already on the page
+    const currentPath = window.location.pathname;
+    
     // Don't navigate if already on the page
-    if ((path === '/chat' && isOnChatPage) || (path === '/profile' && !isOnChatPage)) {
+    if (currentPath === path) {
       return;
     }
 
@@ -52,6 +55,7 @@ export default function ChatHeader({
 
     // Add transition overlay to body
     const overlay = document.createElement('div');
+    overlay.id = 'page-transition-overlay';
     overlay.className = 'page-transition-overlay';
     overlay.style.cssText = `
       position: fixed;
@@ -130,11 +134,28 @@ export default function ChatHeader({
     handleNavigation('/profile');
   };
 
+  // Handle settings navigation
+  const handleSettingsClick = (e) => {
+    e.preventDefault();
+    handleNavigation('/settings');
+  };
+
   // Handle home navigation
   const handleHomeClick = (e) => {
     e.preventDefault();
     handleNavigation('/');
   };
+
+  // Handle help click
+  const handleHelpClick = () => {
+    alert('Help functionality coming soon!');
+  };
+
+  // Get current page for active state styling
+  const currentPath = window.location.pathname;
+  const isOnSettingsPage = currentPath === '/settings';
+  const isOnProfilePage = currentPath === '/profile';
+  const isOnChatPageCurrent = currentPath === '/chat';
 
   return (
     <>
@@ -188,26 +209,30 @@ export default function ChatHeader({
             <a
               href="/chat"
               onClick={handleChatClick}
-              className={`text-white hover:text-gray-300 transition-colors ${isOnChatPage ? 'border-b-2 border-white pb-1' : ''}`}
+              className={`text-white hover:text-gray-300 transition-colors ${isOnChatPageCurrent ? 'border-b-2 border-white pb-1' : ''}`}
             >
               Chat
             </a>
             <a
               href="/profile"
               onClick={handleProfileClick}
-              className={`text-white hover:text-gray-300 transition-colors ${!isOnChatPage ? 'border-b-2 border-white pb-1' : ''}`}
+              className={`text-white hover:text-gray-300 transition-colors ${isOnProfilePage ? 'border-b-2 border-white pb-1' : ''}`}
             >
               Profile
             </a>
-            {['Settings', 'Help'].map((label) => (
-              <button
-                key={label}
-                onClick={() => alert(`${label} clicked`)}
-                className="text-white hover:text-gray-300 transition-colors"
-              >
-                {label}
-              </button>
-            ))}
+            <a
+              href="/settings"
+              onClick={handleSettingsClick}
+              className={`text-white hover:text-gray-300 transition-colors ${isOnSettingsPage ? 'border-b-2 border-white pb-1' : ''}`}
+            >
+              Settings
+            </a>
+            <button
+              onClick={handleHelpClick}
+              className="text-white hover:text-gray-300 transition-colors"
+            >
+              Help
+            </button>
             <button
               onClick={confirmLogout}
               className="block w-full text-left px-4 py-2 text-white hover:bg-red-50 hover:bg-opacity-50 transition-colors rounded-md"
@@ -225,29 +250,33 @@ export default function ChatHeader({
               <a
                 href="/chat"
                 onClick={handleChatClick}
-                className={`block px-4 py-2 text-white hover:bg-gray-700 transition-colors ${isOnChatPage ? 'bg-gray-700' : ''}`}
+                className={`block px-4 py-2 text-white hover:bg-gray-700 transition-colors ${isOnChatPageCurrent ? 'bg-gray-700' : ''}`}
               >
                 Chat
               </a>
               <a
                 href="/profile"
                 onClick={handleProfileClick}
-                className={`block px-4 py-2 text-white hover:bg-gray-700 transition-colors ${!isOnChatPage ? 'bg-gray-700' : ''}`}
+                className={`block px-4 py-2 text-white hover:bg-gray-700 transition-colors ${isOnProfilePage ? 'bg-gray-700' : ''}`}
               >
                 Profile
               </a>
-              {['Settings', 'Help'].map((label) => (
-                <button
-                  key={label}
-                  onClick={() => {
-                    alert(`${label} clicked`);
-                    setShowMobileMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors"
-                >
-                  {label}
-                </button>
-              ))}
+              <a
+                href="/settings"
+                onClick={handleSettingsClick}
+                className={`block px-4 py-2 text-white hover:bg-gray-700 transition-colors ${isOnSettingsPage ? 'bg-gray-700' : ''}`}
+              >
+                Settings
+              </a>
+              <button
+                onClick={() => {
+                  handleHelpClick();
+                  setShowMobileMenu(false);
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors"
+              >
+                Help
+              </button>
               <button
                 onClick={() => {
                   setShowMobileMenu(false);

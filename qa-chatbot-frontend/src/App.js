@@ -6,8 +6,10 @@ import Register from './pages/Register';
 import Chat from './pages/Chat';
 import ChatPage from './pages/Chat'; // Your chatbot UI
 import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage'; // Add this import
 import HomePage from './pages/HomePage';
-import About from './pages/AboutUsPage'; 
+import About from './pages/AboutUsPage';
+import SessionExpiredModal from './components/modals/SessionExpiredModal'; // Add this import
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
@@ -42,6 +44,14 @@ const App = () => {
           element={isLoggedIn ? <Chat /> : <Navigate to="/login" />}
         />
         <Route
+          path="/profile"
+          element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/settings"
+          element={isLoggedIn ? <SettingsPage /> : <Navigate to="/login" />}
+        />
+        <Route
           path="/about"
           element={isLoggedIn ? <About /> : <Navigate to="/login" />}
         />
@@ -49,9 +59,10 @@ const App = () => {
           path="*"
           element={<Navigate to={isLoggedIn ? "/chat" : "/login"} />}
         />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
+      
+      {/* Add the SessionExpiredModal - it will only show when needed */}
+      <SessionExpiredModal />
     </Router>
   );
 };
