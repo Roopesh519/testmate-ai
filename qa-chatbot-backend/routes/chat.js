@@ -3,6 +3,7 @@ import ChatHistory from '../models/ChatHistory.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import Together from 'together-ai';
 import Conversation from '../models/Conversation.js';
+import User from '../models/User.js'; // Import User model
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
@@ -12,8 +13,26 @@ import { getUserApiKey } from './settings.js';
 
 const router = express.Router();
 
+const TRIAL_LIMIT = 5;
+
 let together = null;
-function getTogetherClient(apiKey = null) {
+
+// Initialize default system client
+function initializeSystemClient() {
+  if (!together) {
+    if (!process.env.TOGETHER_API_KEY) {
+      console.warn('⚠️ TOGETHER_API_KEY is missing from env!');
+      return null;
+    }
+    together = new Together({
+      apiKey: process.env.TOGETHER_API_KEY
+    });
+    console.log('🧠 Together system client initialized');
+  }
+  return together;
+}
+
+async function getTogetherClient(userId, apiKey = null) {
   // If user has their own API key, create a new instance with it
   if (apiKey) {
     return new Together({
@@ -21,15 +40,33 @@ function getTogetherClient(apiKey = null) {
     });
   }
   
-  // Otherwise use the default system client
-  // if (!together) {
-  //   if (!process.env.TOGETHER_API_KEY) {
-  //     console.warn('⚠️ TOGETHER_API_KEY is missing from env!');
-  //   }
-  //   together = new Together(); // Will pull from process.env.TOGETHER_API_KEY
-  //   console.log('🧠 Together client initialized');
-  // }
-  return together;
+  // Check trial usage for users without API key
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+  
+  // If user has exhausted trial prompts and no API key
+  if (user.trialPromptsUsed >= TRIAL_LIMIT) {
+    throw new Error('TRIAL_EXHAUSTED');
+  }
+  
+  // Use system client for trial users
+  const systemClient = initializeSystemClient();
+  if (!systemClient) {
+    throw new Error('System API key not configured');
+  }
+  
+  return systemClient;
+}
+
+// Function to increment trial usage
+async function incrementTrialUsage(userId) {
+  await User.findByIdAndUpdate(
+    userId,
+    { $inc: { trialPromptsUsed: 1 } },
+    { new: true }
+  );
 }
 
 // POST message to existing conversation or create a new one
@@ -50,7 +87,7 @@ router.post('/', authMiddleware, async (req, res) => {
   try {
     // Get user's API key if they have one
     const userApiKey = await getUserApiKey(userId);
-    const client = getTogetherClient(userApiKey);
+    const client = await getTogetherClient(userId, userApiKey);
 
     // Add a system prompt at the top, always
     const messagesWithSystem = [
@@ -68,6 +105,11 @@ router.post('/', authMiddleware, async (req, res) => {
 
     // Save only the last exchange for storage
     const userMessage = lastMessage.content;
+
+    // Increment trial usage if user doesn't have their own API key
+    if (!userApiKey) {
+      await incrementTrialUsage(userId);
+    }
 
     if (conversationId) {
       conversation = await Conversation.findById(conversationId);
@@ -87,9 +129,25 @@ router.post('/', authMiddleware, async (req, res) => {
       await conversation.save();
     }
 
-    res.json({ reply, conversationId: conversation._id });
+    // Get updated user info to send remaining trial count
+    const updatedUser = await User.findById(userId);
+    const remainingTrialPrompts = userApiKey ? null : Math.max(0, TRIAL_LIMIT - updatedUser.trialPromptsUsed);
+
+    res.json({ 
+      reply, 
+      conversationId: conversation._id,
+      remainingTrialPrompts
+    });
   } catch (err) {
     console.error('❌ Chat error:', err.message);
+    
+    // Handle trial exhausted error
+    if (err.message === 'TRIAL_EXHAUSTED') {
+      return res.status(403).json({ 
+        error: 'Trial limit reached. Please add your own Together.ai API key in settings to continue.',
+        code: 'TRIAL_EXHAUSTED'
+      });
+    }
     
     // Handle API key related errors
     if (err.message.includes('401') || err.message.includes('Unauthorized')) {
@@ -107,6 +165,35 @@ router.post('/', authMiddleware, async (req, res) => {
     }
     
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// GET trial status
+router.get('/trial-status', authMiddleware, async (req, res) => {
+  const userId = req.user?.id;
+  
+  try {
+    const user = await User.findById(userId);
+    const userApiKey = await getUserApiKey(userId);
+    
+    if (userApiKey) {
+      return res.json({ 
+        hasApiKey: true,
+        trialPromptsUsed: 0,
+        remainingTrialPrompts: null
+      });
+    }
+    
+    const remainingTrialPrompts = Math.max(0, TRIAL_LIMIT - user.trialPromptsUsed);
+    
+    res.json({
+      hasApiKey: false,
+      trialPromptsUsed: user.trialPromptsUsed,
+      remainingTrialPrompts
+    });
+  } catch (err) {
+    console.error('❌ Error fetching trial status:', err.message);
+    res.status(500).json({ error: 'Failed to fetch trial status' });
   }
 });
 
@@ -224,7 +311,7 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
 
     // 🤖 Ask Together AI about the extracted content using user's API key if available
     const userApiKey = await getUserApiKey(userId);
-    const client = getTogetherClient(userApiKey);
+    const client = await getTogetherClient(userId, userApiKey);
     
     const messages = [
       { role: 'system', content: 'You are a helpful assistant. Answer based on the file content provided.' },
@@ -242,6 +329,11 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
 
     const reply = response.choices?.[0]?.message?.content || '[No reply]';
 
+    // Increment trial usage if user doesn't have their own API key
+    if (!userApiKey) {
+      await incrementTrialUsage(userId);
+    }
+
     // 💾 Save to conversation if exists
     let conversation;
     if (conversationId) {
@@ -255,9 +347,25 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
       }
     }
 
-    res.json({ reply, fileName: file.originalname });
+    // Get updated user info to send remaining trial count
+    const updatedUser = await User.findById(userId);
+    const remainingTrialPrompts = userApiKey ? null : Math.max(0, 3 - updatedUser.trialPromptsUsed);
+
+    res.json({ 
+      reply, 
+      fileName: file.originalname,
+      remainingTrialPrompts
+    });
   } catch (err) {
     console.error('❌ File processing error:', err.message || err);
+    
+    // Handle trial exhausted error
+    if (err.message === 'TRIAL_EXHAUSTED') {
+      return res.status(403).json({ 
+        error: 'Trial limit reached. Please add your own Together.ai API key in settings to continue.',
+        code: 'TRIAL_EXHAUSTED'
+      });
+    }
     
     // Handle API key related errors for file upload too
     if (err.message.includes('401') || err.message.includes('Unauthorized')) {

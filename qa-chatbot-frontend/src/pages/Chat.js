@@ -18,11 +18,17 @@ export default function Chat() {
   const [viewportHeight, setViewportHeight] = useState(0);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(null); // null = loading, true/false = result
+  const [trialStatus, setTrialStatus] = useState({
+    hasApiKey: null,
+    trialPromptsUsed: 0,
+    remainingTrialPrompts: null
+  });
 
   const chatRef = useRef();
   const mainContainerRef = useRef();
   const messagesContainerRef = useRef();
   const token = localStorage.getItem('token');
+  const TRIAL_LIMIT = 5;
 
   const checkApiKeyStatus = async () => {
     try {
@@ -34,6 +40,24 @@ export default function Chat() {
       // Assume no API key on error
       setHasApiKey(false);
       return false;
+    }
+  };
+
+  const checkTrialStatus = async () => {
+    try {
+      const res = await api.get('/chat/trial-status');
+      setTrialStatus(res.data);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to check trial status:', err);
+      // Default trial status on error
+      const defaultStatus = {
+        hasApiKey: false,
+        trialPromptsUsed: 0,
+        remainingTrialPrompts: TRIAL_LIMIT
+      };
+      setTrialStatus(defaultStatus);
+      return defaultStatus;
     }
   };
 
@@ -109,10 +133,11 @@ export default function Chat() {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    // Check if user has API key before sending message
-    const hasKey = hasApiKey !== null ? hasApiKey : await checkApiKeyStatus();
+    // Check trial status before sending message
+    const currentTrialStatus = trialStatus.hasApiKey !== null ? trialStatus : await checkTrialStatus();
     
-    if (!hasKey) {
+    // If no API key and trial exhausted, show modal
+    if (!currentTrialStatus.hasApiKey && currentTrialStatus.remainingTrialPrompts <= 0) {
       setShowApiKeyModal(true);
       return;
     }
@@ -140,6 +165,15 @@ export default function Chat() {
 
       const reply = res.data.reply;
 
+      // Update trial status if remaining prompts info is provided
+      if (res.data.remainingTrialPrompts !== undefined) {
+        setTrialStatus(prev => ({
+          ...prev,
+          remainingTrialPrompts: res.data.remainingTrialPrompts,
+          trialPromptsUsed: TRIAL_LIMIT - res.data.remainingTrialPrompts
+        }));
+      }
+
       if (!activeConversationId && res.data.conversationId) {
         setActiveConversationId(res.data.conversationId);
         fetchConversations();
@@ -156,25 +190,37 @@ export default function Chat() {
       setMessages((prev) => prev.slice(0, -1));
       setInput(currentInput); // Restore the input
 
-      // Check if the error might be API key related after all
+      // Handle specific error codes
       if (err.response) {
         const errorMessage = err.response.data?.error || '';
+        const errorCode = err.response.data?.code;
         const statusCode = err.response.status;
         
-        // Double-check API key status if we get auth errors
+        // Handle trial exhausted error
+        if (errorCode === 'TRIAL_EXHAUSTED' || statusCode === 403) {
+          // Update trial status to show exhausted
+          setTrialStatus(prev => ({
+            ...prev,
+            remainingTrialPrompts: 0,
+            trialPromptsUsed: TRIAL_LIMIT
+          }));
+          setShowApiKeyModal(true);
+          return;
+        }
+        
+        // Handle API key errors
         if (
+          errorCode === 'INVALID_API_KEY' ||
           statusCode === 401 || 
-          statusCode === 403 ||
           errorMessage.toLowerCase().includes('api key') ||
           errorMessage.toLowerCase().includes('unauthorized') ||
           errorMessage.toLowerCase().includes('authentication')
         ) {
-          // Re-check API key status
-          const currentHasKey = await checkApiKeyStatus();
-          if (!currentHasKey) {
-            setShowApiKeyModal(true);
-            return;
-          }
+          // Re-check statuses
+          await checkApiKeyStatus();
+          await checkTrialStatus();
+          setShowApiKeyModal(true);
+          return;
         }
       }
       
@@ -202,8 +248,9 @@ export default function Chat() {
 
   const handleModalClose = () => {
     setShowApiKeyModal(false);
-    // Re-check API key status when modal is closed
+    // Re-check API key status and trial status when modal is closed
     checkApiKeyStatus();
+    checkTrialStatus();
   };
 
   useEffect(() => {
@@ -221,8 +268,9 @@ export default function Chat() {
     // Add chat-specific CSS class to body
     document.body.classList.add('chat-page');
 
-    // Check API key status and fetch conversations
+    // Check API key status and trial status, fetch conversations
     checkApiKeyStatus();
+    checkTrialStatus();
     fetchConversations();
 
     // Enhanced viewport height handling
@@ -299,6 +347,62 @@ export default function Chat() {
     setInput('');
   };
 
+  // Determine what banner to show
+  const getBannerContent = () => {
+    if (trialStatus.hasApiKey) {
+      return null; // No banner if user has API key
+    }
+
+    if (trialStatus.remainingTrialPrompts > 0) {
+      // Show trial remaining banner
+      return {
+        type: 'trial',
+        content: (
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-4 h-4 bg-blue-400 rounded-full flex-shrink-0"></div>
+            <span className="text-blue-800">
+              <strong>Trial Mode:</strong> You have{' '}
+              <strong>{trialStatus.remainingTrialPrompts}</strong> free {trialStatus.remainingTrialPrompts === 1 ? 'prompt' : 'prompts'} remaining.{' '}
+              <button 
+                onClick={() => setShowApiKeyModal(true)}
+                className="underline hover:no-underline font-medium"
+              >
+                Add your API key
+              </button>{' '}
+              for unlimited usage.
+            </span>
+          </div>
+        ),
+        bgColor: 'from-blue-50 to-indigo-50',
+        borderColor: 'border-blue-200'
+      };
+    } else {
+      // Show API key required banner
+      return {
+        type: 'required',
+        content: (
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-4 h-4 bg-orange-400 rounded-full flex-shrink-0"></div>
+            <span className="text-orange-800">
+              <strong>API Key Required:</strong> Configure your Together.ai API key in{' '}
+              <button 
+                onClick={() => setShowApiKeyModal(true)}
+                className="underline hover:no-underline font-medium"
+              >
+                settings
+              </button>{' '}
+              to continue chatting.
+            </span>
+          </div>
+        ),
+        bgColor: 'from-orange-50 to-red-50',
+        borderColor: 'border-orange-200'
+      };
+    }
+  };
+
+  const bannerContent = getBannerContent();
+
   return (
     <div
       ref={mainContainerRef}
@@ -356,6 +460,15 @@ export default function Chat() {
               isPageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`}
           >
+            {/* Sticky Banner */}
+            {bannerContent && (
+              <div className="flex-shrink-0 sticky top-0 z-10 bg-white bg-opacity-95 backdrop-blur-sm border-b border-gray-100">
+                <div className={`mx-4 my-3 p-3 bg-gradient-to-r ${bannerContent.bgColor} border ${bannerContent.borderColor} rounded-xl shadow-sm`}>
+                  {bannerContent.content}
+                </div>
+              </div>
+            )}
+
             {/* Messages Container - Scrollable */}
             <div 
               ref={messagesContainerRef}
@@ -366,25 +479,6 @@ export default function Chat() {
                 WebkitOverflowScrolling: 'touch'
               }}
             >
-              {/* API Key Warning Banner */}
-              {hasApiKey === false && (
-                <div className="mx-4 mt-4 mb-2 p-3 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl">
-                  <div className="flex items-center space-x-2 text-sm">
-                    <div className="w-4 h-4 bg-orange-400 rounded-full flex-shrink-0"></div>
-                    <span className="text-orange-800">
-                      <strong>API Key Required:</strong> Configure your Together.ai API key in{' '}
-                      <button 
-                        onClick={() => setShowApiKeyModal(true)}
-                        className="underline hover:no-underline font-medium"
-                      >
-                        settings
-                      </button>{' '}
-                      to start chatting.
-                    </span>
-                  </div>
-                </div>
-              )}
-              
               <ChatMessages 
                 messages={messages} 
                 chatRef={chatRef}
@@ -400,6 +494,7 @@ export default function Chat() {
                 token={token}
                 activeConversationId={activeConversationId}
                 setMessages={setMessages}
+                disabled={!trialStatus.hasApiKey && trialStatus.remainingTrialPrompts <= 0}
               />
             </div>
           </div>
