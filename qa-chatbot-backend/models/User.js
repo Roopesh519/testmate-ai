@@ -7,6 +7,12 @@ const userSchema = new mongoose.Schema({
   togetherApiKey: {
     type: String,
     default: null // Encrypted API key
+  },
+  trialPromptsUsed: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
   }
 }, {
   timestamps: true
