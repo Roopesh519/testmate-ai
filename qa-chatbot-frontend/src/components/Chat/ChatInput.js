@@ -3,6 +3,7 @@ import axios from 'axios';
 import AcceptanceCriteriaModal from '../modals/AcceptanceCriteriaModal';
 import TestCharterModal from '../modals/TestCharterModal';
 import GherkinModal from '../modals/GherkinModal';
+import StepDefinitionModal from '../modals/StepDefinitionModal';
 
 export default function ChatInput({ input, setInput, sendMessage, token, activeConversationId, setMessages }) {
   const textareaRef = useRef(null);
@@ -15,6 +16,7 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
   const [showAcceptanceModal, setShowAcceptanceModal] = useState(false);
   const [showTestCharterModal, setShowTestCharterModal] = useState(false);
   const [showGherkinModal, setShowGherkinModal] = useState(false);
+  const [showStepDefinitionModal, setShowStepDefinitionModal] = useState(false);
 
   // Automatically resize the textarea
   useEffect(() => {
@@ -124,6 +126,11 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
     setShowGherkinModal(false);
   };
 
+  const handleStepDefinitionConfirm = (prompt) => {
+    setInput(prompt);
+    setShowStepDefinitionModal(false);
+  };
+
   return (
     <div className="border-t border-gray-200 bg-white">
       <div className="max-w-4xl mx-auto px-4 py-4">
@@ -133,7 +140,7 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
           <div className="hidden md:block">
             <div className="overflow-x-auto">
               <div className="flex gap-3 min-w-max">
-                <div className="grid grid-cols-3 gap-2 min-w-max">
+                <div className="grid grid-cols-4 gap-2 min-w-max">
                   <button
                     onClick={() => setShowAcceptanceModal(true)}
                     className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium whitespace-nowrap"
@@ -152,14 +159,20 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
                   >
                     Generate Gherkin
                   </button>
+                  <button
+                    onClick={() => setShowStepDefinitionModal(true)}
+                    className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-sm font-medium whitespace-nowrap"
+                  >
+                    Step Definitions
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Mobile: Your provided code */}
+          {/* Mobile: Scrollable layout */}
           <div className="md:hidden">
-          <div className="mb-4 flex justify-center w-full">
+            <div className="mb-4 flex justify-center w-full">
               <div className="flex gap-3 max-w-[350px] min-w-[200px] overflow-x-auto">
                 <button
                   onClick={() => setShowAcceptanceModal(true)}
@@ -178,6 +191,12 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
                   className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium whitespace-nowrap"
                 >
                   Generate Gherkin
+                </button>
+                <button
+                  onClick={() => setShowStepDefinitionModal(true)}
+                  className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Step Definitions
                 </button>
               </div>
             </div>
@@ -324,6 +343,12 @@ export default function ChatInput({ input, setInput, sendMessage, token, activeC
         isOpen={showGherkinModal}
         onClose={() => setShowGherkinModal(false)}
         onConfirm={handleGherkinConfirm}
+      />
+
+      <StepDefinitionModal
+        isOpen={showStepDefinitionModal}
+        onClose={() => setShowStepDefinitionModal(false)}
+        onConfirm={handleStepDefinitionConfirm}
       />
     </div>
   );
