@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -10,17 +11,102 @@ export default function Register() {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  const register = async () => {
+  // Comprehensive input validation
+  const validateInputs = () => {
     if (!username || !email || !password) {
       setError('Please fill in all fields.');
+      return false;
+    }
+
+    // Username validation
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters long.');
+      return false;
+    }
+
+    if (username.length > 20) {
+      setError('Username must be less than 20 characters.');
+      return false;
+    }
+
+    // Check for valid username characters
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(username)) {
+      setError('Username can only contain letters, numbers, hyphens, and underscores.');
+      return false;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return false;
+    }
+
+    if (password.length > 128) {
+      setError('Password must be less than 128 characters.');
+      return false;
+    }
+
+    // Check for password strength (optional)
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
+      setError('Password must contain at least one uppercase letter, one lowercase letter, and one number.');
+      return false;
+    }
+
+    return true;
+  };
+
+  // Enhanced error message mapping
+  const getErrorMessage = (errorData, status) => {
+    // Check if server provided a specific error message
+    if (errorData?.error) {
+      return errorData.error;
+    }
+
+    // Map common HTTP status codes to user-friendly messages
+    switch (status) {
+      case 400:
+        return 'Invalid registration data. Please check your inputs.';
+      case 409:
+        return 'An account with this email or username already exists.';
+      case 422:
+        return 'Registration data is invalid. Please check all fields.';
+      case 429:
+        return 'Too many registration attempts. Please try again later.';
+      case 500:
+        return 'Server error during registration. Please try again later.';
+      case 502:
+      case 503:
+      case 504:
+        return 'Registration service temporarily unavailable. Please try again later.';
+      default:
+        return 'Registration failed. Please try again.';
+    }
+  };
+
+  const register = async () => {
+    // Clear previous errors
+    setError('');
+
+    // Validate inputs
+    if (!validateInputs()) {
       return;
     }
 
     try {
-      setError('');
       setLoading(true);
 
-      // Registration API call
       const res = await fetch(
         `${process.env.REACT_APP_API_BASE_URL}/auth/register`,
         {
@@ -28,7 +114,11 @@ export default function Register() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username, email, password }),
+          body: JSON.stringify({
+            username: username.trim(),
+            email: email.trim().toLowerCase(),
+            password
+          }),
         }
       );
 
@@ -40,16 +130,35 @@ export default function Register() {
           localStorage.setItem('token', data.token);
           window.location.href = '/chat';
         } else {
-          // If no token is returned, navigate to login
+          // If no token is returned, navigate to login with success message
+          localStorage.setItem('registrationSuccess', 'Registration successful! Please log in.');
           window.location.href = '/login';
         }
       } else {
-        setError(data.error || 'Registration failed');
+        // Handle HTTP error responses
+        const errorMessage = getErrorMessage(data, res.status);
+        setError(errorMessage);
       }
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      console.error('Registration error:', err);
+
+      // Handle network errors
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError('Network error. Please check your internet connection.');
+      } else if (err.name === 'SyntaxError') {
+        setError('Server response error. Please try again.');
+      } else {
+        setError(err.message || 'An unexpected error occurred during registration.');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      register();
     }
   };
 
@@ -72,10 +181,13 @@ export default function Register() {
 
         <input
           type="text"
-          placeholder="Username"
+          placeholder="Username (3-20 characters)"
           className="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={username}
           onChange={e => setUsername(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          maxLength={20}
         />
 
         <input
@@ -84,38 +196,35 @@ export default function Register() {
           className="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={email}
           onChange={e => setEmail(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
         />
 
         <div className="relative w-full mb-6">
           <input
             type={showPassword ? 'text' : 'password'}
-            placeholder="Password"
+            placeholder="Password (min 6 chars, mixed case + numbers)"
             className="w-full px-4 py-2 pr-12 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={password}
             onChange={e => setPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
+            maxLength={128}
           />
           <button
             type="button"
             onClick={togglePasswordVisibility}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={loading}
           >
-            {showPassword ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            )}
+            {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
         </div>
 
         <button
           onClick={register}
           disabled={loading}
-          className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition disabled:opacity-50 mb-4"
+          className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed mb-4"
         >
           {loading ? 'Registering...' : 'Register'}
         </button>
@@ -123,16 +232,17 @@ export default function Register() {
         {/* Error message */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm text-center mb-4" role="alert">
-            <strong className="font-semibold"></strong> {error}
+            <span className="block">{error}</span>
           </div>
         )}
-        
+
         {/* Login link */}
         <div className="text-center">
           <p className="text-white text-sm mb-2">Already have an account?</p>
           <button
             onClick={navigateToLogin}
             className="text-green-200 hover:text-white text-sm underline transition-colors"
+            disabled={loading}
           >
             Sign in to your account
           </button>

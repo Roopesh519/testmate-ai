@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -9,17 +10,70 @@ export default function Login() {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  const login = async () => {
+  // Input validation
+  const validateInputs = () => {
     if (!email || !password) {
       setError('Please enter both email and password.');
+      return false;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return false;
+    }
+
+    return true;
+  };
+
+  // Enhanced error message mapping
+  const getErrorMessage = (errorData, status) => {
+    // Check if server provided a specific error message
+    if (errorData?.error) {
+      return errorData.error;
+    }
+
+    // Map common HTTP status codes to user-friendly messages
+    switch (status) {
+      case 400:
+        return 'Invalid email or password format.';
+      case 401:
+        return 'Invalid email or password. Please try again.';
+      case 403:
+        return 'Account access denied. Please contact support.';
+      case 404:
+        return 'Account not found. Please check your email.';
+      case 429:
+        return 'Too many login attempts. Please try again later.';
+      case 500:
+        return 'Server error. Please try again later.';
+      case 502:
+      case 503:
+      case 504:
+        return 'Service temporarily unavailable. Please try again later.';
+      default:
+        return 'Login failed. Please try again.';
+    }
+  };
+
+  const login = async () => {
+    // Clear previous errors
+    setError('');
+
+    // Validate inputs
+    if (!validateInputs()) {
       return;
     }
 
     try {
-      setError('');
       setLoading(true);
 
-      // ✅ Real API call
       const res = await fetch(
         `${process.env.REACT_APP_API_BASE_URL}/auth/login`,
         {
@@ -27,22 +81,46 @@ export default function Login() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email: email.trim(), password }),
         }
       );
 
       const data = await res.json();
-      const token = data.token;
-      if (token) {
-        localStorage.setItem('token', token);
-        window.location.href = '/chat';
+
+      // Check if request was successful
+      if (res.ok) {
+        const token = data.token;
+        if (token) {
+          localStorage.setItem('token', token);
+          window.location.href = '/chat';
+        } else {
+          setError('Authentication failed. No access token received.');
+        }
       } else {
-        setError('No token received from server.');
+        // Handle HTTP error responses
+        const errorMessage = getErrorMessage(data, res.status);
+        setError(errorMessage);
       }
     } catch (err) {
-      setError(err.message || 'Login failed');
+      console.error('Login error:', err);
+
+      // Handle network errors
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError('Network error. Please check your internet connection.');
+      } else if (err.name === 'SyntaxError') {
+        setError('Server response error. Please try again.');
+      } else {
+        setError(err.message || 'An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      login();
     }
   };
 
@@ -68,6 +146,8 @@ export default function Login() {
           className="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={email}
           onChange={e => setEmail(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
         />
 
         <div className="relative w-full mb-6">
@@ -77,29 +157,23 @@ export default function Login() {
             className="w-full px-4 py-2 pr-12 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={password}
             onChange={e => setPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
           />
           <button
             type="button"
             onClick={togglePasswordVisibility}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={loading}
           >
-            {showPassword ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            )}
+            {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
         </div>
 
         <button
           onClick={login}
           disabled={loading}
-          className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition disabled:opacity-50 mb-4"
+          className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed mb-4"
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
@@ -107,16 +181,17 @@ export default function Login() {
         {/* Error message */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm text-center mb-4" role="alert">
-            <strong className="font-semibold"></strong> {error}
+            <span className="block">{error}</span>
           </div>
         )}
-        
+
         {/* Registration link */}
         <div className="text-center">
           <p className="text-white text-sm mb-2">Don't have an account?</p>
           <button
             onClick={navigateToRegister}
             className="text-blue-200 hover:text-white text-sm underline transition-colors"
+            disabled={loading}
           >
             Create an account
           </button>
